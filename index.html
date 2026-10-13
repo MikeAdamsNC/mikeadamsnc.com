@@ -4,11 +4,90 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mike Adams</title>
+<meta name="description" content="Mike Adams. Something new is on the way.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
-         font: 500 clamp(1.5rem, 4vw, 2.5rem)/1.2 system-ui, sans-serif; }
+  :root {
+    --bg: #f4f1ea;
+    --ink: #1c1b19;
+    --muted: #6f6a60;
+    --rule: #d8d2c4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413;
+      --ink: #ece7dc;
+      --muted: #8f897d;
+      --rule: #2e2c28;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(24px, 6vw, 64px);
+  }
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  main { max-width: 44rem; }
+  h1 {
+    margin: 0 0 20px;
+    font-weight: 600;
+    font-size: clamp(44px, 9vw, 96px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  p.lede {
+    margin: 0;
+    font-size: clamp(18px, 2.4vw, 22px);
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
 </style>
 </head>
-<body>Mike Adams</body>
+<body>
+  <header class="mono">mikeadamsnc.com</header>
+  <main>
+    <div class="status mono"><span class="dot" aria-hidden="true"></span>Coming soon</div>
+    <h1>Mike Adams</h1>
+    <p class="lede">Something new is on the way. Check back soon.</p>
+  </main>
+  <footer class="mono">
+    <span>North Carolina</span>
+    <span>&copy; 2026</span>
+  </footer>
+</body>
 </html>

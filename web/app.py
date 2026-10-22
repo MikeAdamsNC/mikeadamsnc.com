@@ -30,7 +30,7 @@ templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 store = make_store()
 recorder = analytics.make_recorder()
 
-SKIP = ("/static", "/brand", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt")
+SKIP = ("/static", "/brand", "/lab-photo", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt")
 PITCH_KINDS = ["App", "Website", "Something else", "Not sure"]
 PITCH_PURPOSES = ["Personal use", "Business", "Something to sell", "Not sure"]
 PITCH_PAY = ["I'd pay you to build it", "Split what it earns", "Free, I just want it to exist", "Not sure"]
@@ -98,7 +98,7 @@ def home(request: Request, v: str = "classic"):
         return page(request, f"v_{v}.html", version=v, versions=versions.all(), projects=content.projects(),
                     experiments=content.experiments())
     tallies = safe_tallies()
-    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic",
+    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic", lab=live_lab(),
                 experiments=ranking.order(content.experiments(), tallies, "hot"))
 
 
@@ -111,7 +111,7 @@ def versions_page(request: Request):
 def site_json():
     """Everything public on the site, for the versions that draw it themselves."""
     tallies = safe_tallies()
-    return {"site": {k: v for k, v in content.site().items()}, "projects": content.projects(),
+    return {"site": {k: v for k, v in content.site().items()}, "projects": content.projects(), "lab": live_lab(),
             "experiments": [{**e, "added": str(e.get("added", "")), **tallies.get(e["slug"], {"up": 0, "down": 0})}
                             for e in ranking.order(content.experiments(), tallies, "hot")],
             "versions": [{**v, "added": str(v.get("added", ""))} for v in versions.all()]}
@@ -487,6 +487,67 @@ def pitch_told(request: Request, pid: str):
     archer_only(request)
     store.mark_told(pid)
     return {"ok": True}
+
+
+LAB_STALE_MIN = 30
+
+
+def live_lab() -> dict | None:
+    """The latest summary Archer sent, or None when it's off or older than 30 minutes."""
+    try:
+        lab = store.get_lab()
+    except Exception as e:
+        logging.warning("lab unavailable: %s", e)
+        return None
+    if not lab or lab.get("off"):
+        return None
+    from datetime import datetime
+    age = (clock.now() - datetime.fromisoformat(lab["at"])).total_seconds() / 60
+    return {**lab, "age_min": max(0, round(age))} if age <= LAB_STALE_MIN else None
+
+
+@app.post("/api/lab")
+async def lab_in(request: Request):
+    """Archer's live lab summary (Archer locked item 31): fixed fields only."""
+    import base64
+
+    archer_only(request)
+    body = await request.json()
+    if body.get("off"):
+        store.put_lab({"off": True, "at": clock.stamp()}, None)
+        return {"ok": True}
+    g, r, t = body.get("grill") or {}, body.get("radar") or {}, body.get("trail_cams") or {}
+    num = lambda v: int(v) if isinstance(v, (int, float)) else None  # noqa: E731
+    clean = {
+        "at": str(body.get("at", clock.stamp()))[:40],
+        "grill": {"on": bool(g.get("on")), "cut": str(g.get("cut", ""))[:40], "grill_f": num(g.get("grill_f")),
+                  "probe_f": num(g.get("probe_f"))} if g.get("on") else {"on": False},
+        "radar": {"call": str(r.get("call", "unknown"))[:20], "readings": num(r.get("readings"))},
+        "trail_cams": {"day": str(t.get("day", ""))[:10],
+                       "species": [{"name": str(s.get("name", ""))[:40], "count": num(s.get("count")) or 0}
+                                   for s in (t.get("species") or [])[:8]]},
+    }
+    photo = None
+    if body.get("photo", {}).get("jpeg_b64"):
+        photo = base64.b64decode(body["photo"]["jpeg_b64"])[:400_000]
+        if not photo.startswith(b"\xff\xd8"):
+            raise HTTPException(400)
+        clean["photo"] = {"species": str(body["photo"].get("species", ""))[:40], "count": num(body["photo"].get("count")) or 1,
+                          "v": clock.stamp()[:16]}
+    else:
+        prev = store.get_lab() or {}
+        if prev.get("photo"):
+            clean["photo"] = prev["photo"]
+    store.put_lab(clean, photo)
+    return {"ok": True}
+
+
+@app.get("/lab-photo.jpg")
+def lab_photo():
+    jpeg = store.get_lab_photo()
+    if not jpeg:
+        raise HTTPException(404)
+    return Response(jpeg, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=3600"})
 
 
 @app.get("/api/comments/unsent")

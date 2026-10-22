@@ -68,6 +68,23 @@ can't be reached the comment is held, never posted unchecked. Ten comments per p
 per day. Archer's `site_pitches` job pushes every new comment to Mike's phone, and says
 when one was held.
 
+## The live lab
+
+The home page's lab panel shows real signals from home (Archer locked item 31, amended
+2026-10-22). Archer's `site_lab` job builds a small summary in plain code every 5
+minutes and posts it to `/api/lab` with Archer's token; the site can't reach Archer.
+
+- **Grill, two hours late:** on or off, the cut from a fixed list (never the typed cook
+  name), the grill and meat temperatures.
+- **Raleigh radar, now:** rain, bugs, birds or clear, with how many readings it sees.
+- **Trail cams, yesterday:** the species tally; people, pets and vehicles never appear.
+- **One photo a day:** the fridge's pick, with the camera's info stamp cropped off and
+  every file detail removed before it leaves Archer. Served at `/lab-photo.jpg`.
+
+The site keeps only the latest summary and photo (Firestore `lab`) and checks every
+field it's sent; anything else is dropped. If the summary is over 30 minutes old, or
+Archer's setting `site/live_lab` is `off`, the panel goes back to "quiet in the lab".
+
 ## Analytics (ours, no cookies)
 
 Every page view is recorded by the server, along with votes, comments and sign-ins; the
@@ -132,6 +149,7 @@ the public can comment.
 | Job | When | What it does |
 |---|---|---|
 | `mikeadamsnc-keep-warm` | Every 10 minutes | Visits the site so it stays ready for visitors. |
+| Archer `site_lab` | Every 5 minutes | Sends the live lab summary (and the day's photo once). |
 | Archer `site_pitches` | Every 5 minutes | Pushes each new pitch and comment to Mike's phone, then marks it sent. |
 
 ## Changing the site

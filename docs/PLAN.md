@@ -108,6 +108,7 @@ Each step ships on its own.
    dashboard waits for the Google sign-in client.
 2. **Votes and comments:** Sign in with Google, AI moderation, privacy page. Built
    2026-10-22.
-3. **Pitch bot** with site suggestions (starts with Mike's voice interview).
+3. **Pitch bot** with site suggestions. Built 2026-10-22 with a generic voice (Mike's
+   call); his own voice can come later from the interview.
 4. **Live lab** (after the Archer locked-item decision).
 5. **Site versions:** Mountains to Sea, then Terminal and Talk to it.

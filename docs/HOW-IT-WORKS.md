@@ -24,7 +24,20 @@ Plain language. Update this in the same change as anything it describes.
 
 ## Ideas people pitch
 
-The form saves each pitch to Firestore (database `mikeadamsnc`, collection `pitches`).
+**The chat** (`/pitch`) is the main way in. An AI (Gemini 3.8 Flash, `web/bot.py`, through
+`web/gemini.py`) asks the pitch questions one at a time and, when it has enough, shows a
+summary the visitor sends or keeps editing. It says it's an AI, never promises anything,
+quotes prices or agrees to terms, knows nothing private, and stays on ideas and site
+suggestions ("site idea"). Its instructions are plain words in `content/bot.md`: edit
+that file to change how it talks. The browser holds the conversation; nothing is saved
+until the visitor sends the summary, and then the pitch is saved with the conversation
+so Mike can read it on the dashboard. Limits: 30 messages per visitor per day, 600 bot
+replies per day site-wide, 20 turns per conversation. If the AI is out or a limit is
+hit, the chat points to the form. The AI's thinking is set to "low" (faster and steadier
+on this model) and a reply that runs on is retried. A $5/month budget alert on Vertex AI
+and the Gemini API emails Mike at 50, 90 and 100 percent.
+
+**The form** (`/pitch/form`) saves each pitch to Firestore (database `mikeadamsnc`, collection `pitches`).
 Spam protection: a hidden trap field, a check that a person took at least 3 seconds,
 and at most 5 pitches per visitor per day. Mike sees and sorts pitches (new, maybe,
 building, done, no) on the dashboard.
@@ -109,3 +122,5 @@ the public can comment.
 
 Expected under $1/month: Cloud Run, Firestore and BigQuery all stay inside Google's
 free monthly allowances at this traffic; the scheduler job is one of three free ones.
+The AI (pitch chat and comment checks) costs about 2 to 3 cents a pitch conversation and
+fractions of a cent a comment, watched by the $5 budget alert.

@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, clock, content, moderate, ranking
+from . import analytics, auth, bot, clock, content, moderate, ranking
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -172,6 +172,57 @@ def project(request: Request, slug: str):
 
 
 @app.get("/pitch")
+def pitch_chat(request: Request):
+    return page(request, "chat.html", greeting=bot.GREETING)
+
+
+@app.post("/pitch/chat")
+async def chat_turn(request: Request):
+    try:
+        messages = bot.clean((await request.json()).get("messages", []))
+    except Exception:
+        raise HTTPException(400)
+    device, browser, is_bot = analytics.describe(request.headers.get("user-agent", ""))
+    if is_bot:
+        raise HTTPException(403)
+    vid = visitor(request)
+    day = clock.today()
+    if store.bump(f"chat-{vid}-{day}") > 30 or store.bump(f"chat-all-{day}") > 600:
+        return {"reply": "That's all the chatting I can do today. The form still works, and Mike reads those too.",
+                "ready": False, "down": True}
+    users = sum(1 for m in messages if m["role"] == "user")
+    try:
+        out = bot.turn(messages)
+    except bot.Unavailable:
+        return {"reply": "My brain is offline for a moment. The form works right now, and Mike reads those too.",
+                "ready": False, "down": True}
+    recorder.record(analytics.row("chat_start" if users <= 1 else "chat_message", path="/pitch", visitor=vid,
+                                  device=device, browser=browser, value=float(users), detail="ready" if out["ready"] else ""))
+    return out
+
+
+@app.post("/pitch/chat/send")
+async def chat_send(request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(400)
+    pitch = bot.tidy(data.get("pitch"))
+    messages = bot.clean(data.get("messages", []))
+    if len(pitch["what"]) < 10:
+        return JSONResponse({"ok": False, "error": "Tell me a little more about what it is first."}, status_code=400)
+    vid = visitor(request)
+    if store.bump(f"pitch-{vid}-{clock.today()}") > 5:
+        return JSONResponse({"ok": False, "error": "That's a lot of ideas for one day. Send the rest tomorrow."}, status_code=429)
+    device, _, _ = analytics.describe(request.headers.get("user-agent", ""))
+    transcript = "\n".join(f"{'Visitor' if m['role'] == 'user' else 'Bot'}: {m['text']}" for m in messages)[:12000]
+    store.add_pitch({**pitch, "status": "new", "source": "chat", "transcript": transcript, "created_at": clock.stamp(),
+                     "visitor": vid, "device": device})
+    recorder.record(analytics.row("pitch_submit", path="/pitch", visitor=vid, device=device, detail="chat"))
+    return {"ok": True}
+
+
+@app.get("/pitch/form")
 def pitch_form(request: Request):
     return page(request, "pitch.html", kinds=PITCH_KINDS, purposes=PITCH_PURPOSES, pay=PITCH_PAY,
                 started=int(time.time() * 1000), error=None, form={})

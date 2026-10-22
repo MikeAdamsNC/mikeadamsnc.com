@@ -5,7 +5,7 @@
 <section class="wrap narrow">
   <div class="mono label">Pitch an idea</div>
   <h1>{{ site.pitch_title }}</h1>
-  <p class="lede">{{ site.pitch_line }} Only the first question is required.</p>
+  <p class="lede">{{ site.pitch_line }} Only the first question is required. <a href="/pitch" class="inline">Rather chat?</a></p>
   {% if error %}<p class="err" role="alert">{{ error }}</p>{% endif %}
   <form method="post" action="/pitch" class="form" data-x="THE FORM|Saved to Firestore · Archer tells Mike on his phone · spam trap + daily limit">
     <input type="hidden" name="started" value="{{ started }}">

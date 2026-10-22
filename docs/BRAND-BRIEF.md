@@ -34,7 +34,7 @@ online. Nobody should need to be technical to understand the site.
 
 Welcoming and techy. Clean and modern, clearly built by someone who knows the
 technology, but friendly enough that anyone feels invited in to look around or pitch an
-idea. Confident, not polished-corporate. Works in light and dark.
+idea. Confident, not polished-corporate.
 
 ## Avoid
 

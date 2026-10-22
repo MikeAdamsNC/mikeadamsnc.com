@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block main %}
+<section class="wrap hero">
+  <div class="hero-text">
+    <h1 data-x="HEADLINE|Written with Mike · lives in content/site.yaml">{{ site.headline }}</h1>
+    <p class="lede">{{ site.lede }}</p>
+    <div class="btns"><a class="btn b1" href="#projects" data-cta="see_projects">See the projects</a><a class="btn b2" href="/pitch" data-cta="hero_pitch">Pitch an idea</a></div>
+  </div>
+  <div class="console" data-x="THE LAB|What Mike is playing with now · live signals from home come later">
+    <div class="ch"><i></i><i></i><i></i><b>the lab</b></div>
+    <div class="cl">
+      <div class="k">experimenting_with</div>
+      {% for t in site.experimenting_with %}<div class="t">→ {{ t }}</div>{% endfor %}
+      <div class="k" style="margin-top:14px">latest_experiments</div>
+      {% for e in experiments[:3] %}<a class="t" href="/lab/{{ e.slug }}">{{ e.slug }} <em class="v-{{ e.verdict }}">● {{ e.verdict_label|lower }}</em></a>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="wrap sec" id="projects">
+  <div class="mono label">Projects</div>
+  {% for p in projects %}
+  <a class="row {{ 'rev' if loop.index is even }}" href="/projects/{{ p.slug }}" data-x="PROJECT|{{ p.name }} · {{ p.built_with|join(', ') }}">
+    <div class="shot"><img src="/static/{{ p.image }}" alt="{{ p.name }}" loading="lazy"></div>
+    <div class="rt"><span class="mono">{{ p.kind }} · 0{{ loop.index }}</span><h3>{{ p.name }}</h3><p>{{ p.line }}</p><span class="pill">{{ p.status }}</span></div>
+  </a>
+  {% endfor %}
+</section>
+
+<section class="wrap sec">
+  <div class="sec-head"><div class="mono label">Experiment log</div><a href="/lab" class="more">The whole Lab →</a></div>
+  <div class="log" data-x="EXPERIMENT LOG|{{ experiments|length }} entries · {{ experiments|selectattr('verdict','equalto','flop')|list|length }} flop · lives in content/experiments.yaml">
+    {% for e in experiments %}
+    <a class="le" href="/lab/{{ e.slug }}"><span class="mono">{{ e.number }}</span><b>{{ e.title }}</b><span class="hook">{{ e.hook }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="wrap sec pitch">
+  <div>
+    <h2>{{ site.pitch_title }}</h2>
+    <p>{{ site.pitch_line }}</p>
+    <a class="btn b1" href="/pitch" data-cta="pitch_band">Pitch an idea</a>
+  </div>
+  <div class="chatbox" data-x="PITCH|Today: a simple form. Coming soon: an AI that talks like Mike">
+    <div class="bub bot">What do you want built?</div>
+    <div class="bub you">An app that tells me when my favorite food truck is nearby.</div>
+    <div class="bub bot">I like it. Is this just for you, or something you'd sell?</div>
+    <div class="soon mono">The chat version is coming. For now, the form works.</div>
+  </div>
+</section>
+
+<section class="wrap sec about" id="about">
+  <img src="/brand/icon/icon.svg" alt="" class="about-mk">
+  <p>{{ site.about }}</p>
+</section>
+{% endblock %}

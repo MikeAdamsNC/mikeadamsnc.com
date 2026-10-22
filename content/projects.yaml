@@ -1,0 +1,35 @@
+# Real things Mike keeps running. Order here is the order on the site.
+- slug: startfishing
+  name: StartFishing
+  line: "For beginners and shore anglers: know when to go, and what to throw."
+  kind: iPhone app
+  status: Live
+  link: https://startfishing.app
+  image: img/startfishing.png
+  body: >
+    StartFishing turns the spot you're standing on into a plan: today's bite, which fish
+    are feeding, the rig to tie on, and exactly how to fish it. Built for people who fish
+    from the shore and want to catch more without years of trial and error.
+  built_with: [SwiftUI, Cloud Run, Claude Code]
+- slug: fridge-display
+  name: Fridge display
+  line: "The family calendar, groceries and weather, right on the kitchen fridge."
+  kind: iPad · Python
+  status: Running at home
+  image: img/fridge.svg
+  body: >
+    An iPad mini on the fridge replaced the family whiteboard: a two-week calendar, the
+    weather, school, the grill's status, the latest trail cam photo, groceries, and a
+    voice you can talk to.
+  built_with: [iPad app, Python, Archer]
+- slug: archer
+  name: Archer
+  line: "My own data system: my history in one place I own, readable by any AI I choose."
+  kind: Python · SwiftUI · MCP
+  status: Running every day
+  image: img/archer.svg
+  body: >
+    Archer keeps my history (health, home, money, the house's sensors) in a form I own and
+    can read, backed up to my own Google Drive. Any AI I choose can read it through one
+    locked door, and everything still works without AI at all.
+  built_with: [Python, SwiftUI, MCP, Claude Code]

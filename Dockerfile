@@ -3,6 +3,7 @@ WORKDIR /srv
 COPY web/requirements.txt web/requirements.txt
 RUN pip install --no-cache-dir -r web/requirements.txt
 COPY web web
+COPY content content
 COPY brand/logo brand/logo
 COPY brand/icon brand/icon
 ENV PORT=8080

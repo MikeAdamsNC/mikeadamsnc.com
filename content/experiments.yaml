@@ -1,0 +1,71 @@
+# One-off tests and showcases, flops included. Newest first.
+# verdict: worked | meh | flop     status: running | done | retired
+- slug: rain-or-bugs
+  title: "My radar can tell rain from bugs."
+  hook: "Raw NOAA radar, decoded at home, graded against my own rain gauge."
+  question: "Can my own radar beat the weather apps I pay for?"
+  used: [NOAA NEXRAD Level II radar, HRRR wind model, Python, Claude Code]
+  result: >
+    Live Raleigh radar on my phone and a minute-by-minute rain line for the house. It also
+    says when the radar is seeing birds or bugs instead of rain, by checking whether the
+    echo drifts with the wind. One night the bug bloom went from 11,000 to 196,000 radar
+    readings within 45 minutes of sunset.
+  verdict: worked
+  verdict_line: "Every forecast gets graded against my backyard rain gauge, so I know when it's right."
+  status: running
+- slug: grill-autopilot
+  title: "My grill runs the whole cook."
+  hook: "AI writes the plan; I just say when the meat's on."
+  question: "Can the grill run a cook by itself if it knows the meat's temperature?"
+  used: [Traeger WiFIRE, Python, Claude]
+  result: >
+    AI writes a plan for the cut. Each phase ends on the meat probe's temperature, not a
+    timer, and it adjusts the heat to land the finish time I ask for.
+  verdict: worked
+  verdict_line: "Dinner shows up on time without me babysitting the grill."
+  status: running
+- slug: trail-cam-ai
+  title: "An AI reads every trail cam photo."
+  hook: "Its favorite mistake: calling a deer a car."
+  question: "Can an AI sort thousands of trail cam photos so I only look at the good ones?"
+  used: [SpeciesNet, Python, Gmail]
+  result: >
+    The cameras email each photo, and Google's open camera-trap model labels the species
+    on the Mac Mini at home. 828 deer in its first two weeks, plus coyotes and foxes. Every
+    correction I make becomes a rule, so the same mistake fixes itself.
+  verdict: worked
+  verdict_line: "It still calls a deer a car now and then. It's getting better."
+  status: running
+- slug: school-email
+  title: "School emails, read for me."
+  hook: "Only what a parent acts on reaches the kitchen screen."
+  question: "Can AI read school email and keep only what a parent actually has to do?"
+  used: [Gmail, Gemini, Python]
+  result: >
+    AI reads every school email and its attachments and pulls out only what needs action:
+    homework, what to bring, early release. Items disappear once their day passes, so
+    there's nothing to mark done.
+  verdict: worked
+  verdict_line: "Nothing to remember, nothing to check off."
+  status: running
+- slug: self-fixing-code
+  title: "Archer fixes its own bugs."
+  hook: "A second AI reviews every change before it ships."
+  question: "Can a system file, fix and ship its own bugs safely?"
+  used: [Claude Code, a second reviewing model, GitHub CI]
+  result: >
+    It filed, fixed and shipped its own bugs and dependency updates, with a second AI
+    reviewing every change and the tests as the gate. Nothing merged unless everything
+    passed.
+  verdict: worked
+  verdict_line: "It worked. I kept it paused most of the time by choice."
+  status: retired
+- slug: local-ai-model
+  title: "The flop: a local AI model."
+  hook: "Ran it to save money. Killed it a month later."
+  question: "Can a small AI model on my own computer handle the small jobs and save on cloud calls?"
+  used: [Ollama, Mac Mini]
+  result: "I ran it for about a month, then retired it."
+  verdict: flop
+  verdict_line: "Mike's take on why it didn't stick is coming soon."
+  status: retired

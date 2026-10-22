@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}The Lab · MikeAdamsNC{% endblock %}
+{% block description %}Experiments, one-off tests and showcases, flops included.{% endblock %}
+{% block main %}
+<section class="wrap page-head">
+  <div class="mono label">The Lab</div>
+  <h1>Experiments, flops included.</h1>
+  <p class="lede">Some of these became things I use every day. One didn't. They all get the same honest write-up.</p>
+</section>
+<section class="wrap sec grid-exp" data-x="THE LAB|{{ experiments|length }} experiments · newest first · voting comes next">
+  {% for e in experiments %}
+  <a class="exp" href="/lab/{{ e.slug }}">
+    <div class="exp-top"><span class="mono">{{ e.number }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></div>
+    <h3>{{ e.title }}</h3><p>{{ e.hook }}</p>
+    <div class="tools">{% for t in e.used %}<span>{{ t }}</span>{% endfor %}</div>
+    <span class="mono status">{{ e.status_label }}</span>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

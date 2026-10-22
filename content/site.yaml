@@ -1,0 +1,14 @@
+# Words on the site that aren't a project or an experiment.
+headline: "I build things with new tech. The good ones stick around."
+lede: "I try new tools as they show up (Claude Code, Grok, iOS, APIs, whatever's next) and turn the best experiments into things people actually use."
+about: "I'm Mike. I build things with technology as it shows up. Most of it starts as a weekend question, like “could the fridge run the house?” A few turn into something I use every day. Some don't, and I'll tell you about those too."
+pitch_title: "Got an idea you want built?"
+pitch_line: "Pitch it. I read every one and pick the few I can't stop thinking about. No promises, no pressure."
+pitch_thanks: "Got it. It's in the queue, and I read everything. If it's one I can get behind, you'll hear from me."
+experimenting_with: [Claude Code, Grok, Gemini 3.8 Flash, SwiftUI, MCP, Cloud Run, NOAA radar, SpeciesNet]
+socials:
+  - {name: X, url: "https://x.com/MikeAdamsNC"}
+  - {name: Instagram, url: "https://www.instagram.com/mikeadamsnc/"}
+  - {name: LinkedIn, url: "https://www.linkedin.com/in/mikeadamsnc/"}
+  - {name: Facebook, url: "https://www.facebook.com/mikeadams/"}
+  - {name: GitHub, url: "https://github.com/MikeAdamsNC"}

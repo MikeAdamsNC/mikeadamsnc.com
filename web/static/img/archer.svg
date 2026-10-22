@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#0B1620"/>
+  <g font-family="JetBrains Mono,monospace" font-size="13">
+    <text x="60" y="70" fill="#7FD6CF">archer · my history, in one place I own</text>
+    <g fill="#8EA0AD">
+      <text x="60" y="120">weather_readings</text><text x="60" y="150">pool_readings</text><text x="60" y="180">wildlife_sightings</text><text x="60" y="210">grill_cooks</text><text x="60" y="240">daily_activity</text><text x="60" y="270">sleep_nights</text>
+    </g>
+    <g fill="#DCE7EA" text-anchor="end">
+      <text x="380" y="120">69,252</text><text x="380" y="150">149,663</text><text x="380" y="180">51,218</text><text x="380" y="210">9</text><text x="380" y="240">307</text><text x="380" y="270">300</text>
+    </g>
+  </g>
+  <rect x="440" y="96" width="300" height="190" rx="16" fill="#111F2B" stroke="#23394A"/>
+  <path d="M460 250 L500 200 L530 226 L570 160 L610 214 L640 186 L680 230 L720 170" fill="none" stroke="#7FD6CF" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M460 266 L720 266" stroke="#23394A"/>
+  <rect x="60" y="330" width="680" height="110" rx="16" fill="#0B6E7A"/>
+  <text x="90" y="372" font-family="Manrope,sans-serif" font-weight="800" font-size="24" fill="#fff">Any AI I choose can read it.</text>
+  <text x="90" y="404" font-family="JetBrains Mono,monospace" font-size="13" fill="#BFE9E5">CLAUDE · GROK · GEMINI  →  ONE LOCKED DOOR  →  MY DATA</text>
+</svg>

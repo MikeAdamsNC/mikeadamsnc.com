@@ -58,14 +58,16 @@
     reviewing every change and the tests as the gate. Nothing merged unless everything
     passed.
   verdict: worked
-  verdict_line: "It worked. I kept it paused most of the time by choice."
+  verdict_line: "It worked, but I kept it paused most of the time, and in the end we killed the pipeline."
   status: retired
 - slug: local-ai-model
   title: "The flop: a local AI model."
   hook: "Ran it to save money. Killed it a month later."
   question: "Can a small AI model on my own computer handle the small jobs and save on cloud calls?"
   used: [Ollama, Mac Mini]
-  result: "I ran it for about a month, then retired it."
+  result: >
+    I ran it for about a month. It turned out it wasn't needed: the small jobs either went
+    to a cloud model that costs pennies, or plain code handled them with better quality.
   verdict: flop
-  verdict_line: "Mike's take on why it didn't stick is coming soon."
+  verdict_line: "Not worth the gigabytes it took up. Penny models and plain code did the job better."
   status: retired

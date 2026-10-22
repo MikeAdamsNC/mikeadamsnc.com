@@ -23,3 +23,7 @@ gcloud run deploy mikeadamsnc \
   --set-env-vars "^|^SITE_BACKEND=cloud|ADMIN_EMAILS=triangleharbor@gmail.com,mikeadamsnc85@gmail.com|BUILD_TIME=$(TZ=America/New_York date '+%b %-d, %-I:%M %p')" \
   --set-secrets "$SECRETS" \
   $TRAFFIC --quiet
+# A preview deploy pins live traffic to the old version; a live deploy sends it all to the newest.
+if [ -z "$PREVIEW" ]; then
+  gcloud run services update-traffic mikeadamsnc --to-latest --project macmanager-home --region us-east1 --quiet
+fi

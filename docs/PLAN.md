@@ -5,8 +5,8 @@
 **Hosting: a real server app on Cloud Run, the cheap way.** Not a static site.
 
 - **Where:** Cloud Run in GCP project `macmanager-home`, region `us-east1`, next to the
-  Cloud DNS zone `mikeadamsnc-com` that already holds the domain. GitHub Pages is
-  retired when the new site goes live.
+  Cloud DNS zone `mikeadamsnc-com` that already holds the domain. Live since
+  2026-10-22 (GitHub Pages retired); see `docs/HOW-IT-WORKS.md`.
 - **Shuts down when idle** (no always-on instance). A Cloud Scheduler job pings it every
   10 minutes so a visitor almost never waits for it to start. Google can still restart
   it now and then; the rare first visit after that waits about a second. Always on is
@@ -41,6 +41,10 @@ Behind the form: a private queue only Mike can open (Sign in with Google), and a
 count of what he is building right now.
 
 ## Next
+
+Done 2026-10-22: brand (colors, logo) in `docs/BRAND.md`; the site moved to Cloud Run
+with a coming-soon page. Next: tone and content, then the real pages.
+
 
 Brand first (logo, colors, type, voice), made in Claude Design from `docs/BRAND-BRIEF.md`.
 Then the site.

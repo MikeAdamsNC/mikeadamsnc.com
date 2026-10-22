@@ -46,7 +46,7 @@ idea. Confident, not polished-corporate.
 
 1. Logo: a wordmark for "MikeAdamsNC" plus a small mark that works as a favicon and app
    icon. 2-3 directions to choose from.
-2. Colors: a small palette (background, ink, muted, one or two accents), light and dark.
+2. Colors: one small palette (background, ink, muted, one or two accents).
 3. Type: a headline face and a body face, both free web fonts.
 4. Voice: 5-6 sample lines (site headline, a project card, the idea-form intro, the
    "thanks, I got it" message).

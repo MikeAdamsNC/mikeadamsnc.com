@@ -60,7 +60,7 @@ with socials.
 - First experiments (from old Archer's public build list; never mention his employer,
   money, job search or the kids' names): the radar that tells rain from bugs, the grill
   autopilot, the trail cam AI, school email read for him, Archer fixing its own bugs,
-  and the flop (the local AI model he killed).
+  and the local AI model he killed (a flop).
 - Fridge and Archer screenshots use demo data: nothing personal (family calendar,
   school, health, money) is ever published.
 

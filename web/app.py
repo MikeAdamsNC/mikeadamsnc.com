@@ -12,16 +12,18 @@ import time
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, bot, clock, content, moderate, ranking
+from . import analytics, auth, bot, clock, content, moderate, ranking, talk, versions
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.mount("/brand", StaticFiles(directory=ROOT / "brand"), name="brand")
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
@@ -91,10 +93,78 @@ def safe_tallies() -> dict:
 
 
 @app.get("/")
-def home(request: Request):
+def home(request: Request, v: str = "classic"):
+    if v in versions.slugs() and v != "classic":
+        return page(request, f"v_{v}.html", version=v, versions=versions.all(), projects=content.projects(),
+                    experiments=content.experiments())
     tallies = safe_tallies()
-    return page(request, "home.html", projects=content.projects(), tallies=tallies,
+    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic",
                 experiments=ranking.order(content.experiments(), tallies, "hot"))
+
+
+@app.get("/versions")
+def versions_page(request: Request):
+    return page(request, "versions.html", versions=versions.all())
+
+
+@app.get("/api/site.json")
+def site_json():
+    """Everything public on the site, for the versions that draw it themselves."""
+    tallies = safe_tallies()
+    return {"site": {k: v for k, v in content.site().items()}, "projects": content.projects(),
+            "experiments": [{**e, "added": str(e.get("added", "")), **tallies.get(e["slug"], {"up": 0, "down": 0})}
+                            for e in ranking.order(content.experiments(), tallies, "hot")],
+            "versions": [{**v, "added": str(v.get("added", ""))} for v in versions.all()]}
+
+
+_buoy: dict = {}
+
+
+@app.get("/api/buoy")
+def buoy():
+    """Latest waves at NOAA buoy 41025 (Diamond Shoals, off Cape Hatteras), cached 30 minutes."""
+    import httpx
+
+    now = time.time()
+    if _buoy and now - _buoy["at"] < 1800:
+        return _buoy["data"]
+    data = {"station": "41025", "name": "Diamond Shoals", "wave_ft": None, "period_s": None, "at": None}
+    try:
+        lines = httpx.get("https://www.ndbc.noaa.gov/data/realtime2/41025.txt", timeout=10).text.splitlines()
+        for line in lines[2:]:
+            f = line.split()
+            if len(f) > 9 and f[8] != "MM":
+                from datetime import datetime, timezone
+                utc = datetime(int(f[0]), int(f[1]), int(f[2]), int(f[3]), int(f[4]), tzinfo=timezone.utc)
+                data |= {"wave_ft": round(float(f[8]) * 3.281, 1), "period_s": float(f[9]) if f[9] != "MM" else None,
+                         "at": utc.astimezone(clock.EASTERN).strftime("%-I:%M %p")}
+                break
+    except Exception as e:
+        logging.warning("buoy unavailable: %s", e)
+    _buoy.update(at=now, data=data)
+    return data
+
+
+@app.post("/talk")
+async def talk_turn(request: Request):
+    try:
+        messages = bot.clean((await request.json()).get("messages", []))
+    except Exception:
+        raise HTTPException(400)
+    device, browser, is_bot = analytics.describe(request.headers.get("user-agent", ""))
+    if is_bot or not messages:
+        raise HTTPException(400)
+    vid = visitor(request)
+    day = clock.today()
+    if store.bump(f"talk-{vid}-{day}") > 40 or store.bump(f"chat-all-{day}") > 600:
+        return {"reply": "That's all the talking I can do today. The Classic version has everything.", "links": [{"label": "Classic", "path": "/?v=classic"}], "down": True}
+    try:
+        out = talk.answer(messages[-12:])
+    except bot.Unavailable:
+        return {"reply": "My brain is offline for a moment. The Classic version has everything.", "links": [{"label": "Classic", "path": "/?v=classic"}], "down": True}
+    recorder.record(analytics.row("talk_message", path="/", visitor=vid, device=device, browser=browser, version="talk",
+                                  value=float(sum(1 for m in messages if m["role"] == "user"))))
+    return out
 
 
 @app.get("/lab")

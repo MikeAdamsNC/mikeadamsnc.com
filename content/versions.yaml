@@ -1,0 +1,21 @@
+# Versions of the site itself. Each one is an experiment; all read the same content.
+- slug: classic
+  name: Classic
+  line: "The lab layout: projects, experiments and a pitch, on one page."
+  tried: "Can a personal site feel like a working lab instead of a portfolio?"
+  added: 2026-10-22
+- slug: terminal
+  name: Terminal
+  line: "The whole site as a command line. Type help."
+  tried: "Is a site you type into more fun than one you scroll?"
+  added: 2026-10-22
+- slug: talk
+  name: Talk to it
+  line: "No pages. Ask the site anything and it answers."
+  tried: "Could a site be just a conversation?"
+  added: 2026-10-22
+- slug: mountains
+  name: Mountains to Sea
+  line: "Scroll from Mount Mitchell to the Outer Banks on real elevation data, with live ocean waves."
+  tried: "Can the logo's story be the way you move around the site?"
+  added: 2026-10-22

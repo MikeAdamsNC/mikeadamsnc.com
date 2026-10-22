@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}MikeAdamsNC · Terminal{% endblock %}
+{% block body_class %}v-terminal{% endblock %}
+{% block main %}
+<section class="wrap term-wrap">
+  <div class="term" id="term" data-x="TERMINAL VERSION|The whole site as a command line · reads /api/site.json · type help">
+    <div class="ch"><i></i><i></i><i></i><b>mike@adamsnc: ~</b></div>
+    <div class="tout" id="tout" aria-live="polite"></div>
+    <form class="tin" id="tin" autocomplete="off"><span class="ps">mike@adamsnc ~ $</span><input id="cmd" aria-label="Type a command" autocapitalize="off" spellcheck="false" enterkeyhint="go"></form>
+  </div>
+  <div class="tkeys" id="tkeys" aria-label="Shortcuts">
+    {% for c in ['help','about','projects','lab','pitch','versions','clear'] %}<button type="button" data-c="{{ c }}">{{ c }}</button>{% endfor %}
+  </div>
+  <p class="fine tnote">This is one version of the site. <a href="/?v=classic">Back to Classic</a> · <a href="/versions">All versions</a></p>
+</section>
+<script src="/static/terminal.js" defer></script>
+{% endblock %}

@@ -111,4 +111,4 @@ Each step ships on its own.
 3. **Pitch bot** with site suggestions. Built 2026-10-22 with a generic voice (Mike's
    call); his own voice can come later from the interview.
 4. **Live lab** (after the Archer locked-item decision).
-5. **Site versions:** Mountains to Sea, then Terminal and Talk to it.
+5. **Site versions:** Mountains to Sea, then Terminal and Talk to it. Built 2026-10-22.

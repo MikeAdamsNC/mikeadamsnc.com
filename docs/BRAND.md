@@ -42,7 +42,7 @@ in Deep water.
 **The story, the way Mike tells it:** North Carolina runs from the mountains to the sea.
 The M and the A are a mountain range hidden in my name, and the color is the sea. The A
 is also a lambda (Λ): in code, a small function that does one job; in physics, the
-symbol for wavelength.
+symbol for wavelength, which also represents the waves in the sea.
 
 How we got here: color first, then icon ideas (waves, floats, one-line marks), then
 the wordmark alone. Ruled out along the way: NC as the focus, an "MA" monogram,

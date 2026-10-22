@@ -1,4 +1,4 @@
-# mikeadamsnc.com: plan
+# MikeAdamsNC.com: plan
 
 ## Decided (2026-10-21)
 
@@ -26,7 +26,7 @@ not worth it for a personal site.
 
 ## What the site is (2026-10-22, draft)
 
-mikeadamsnc.com is Mike's personal brand, with his personality baked in. For anyone who
+MikeAdamsNC.com is Mike's personal brand, with his personality baked in. For anyone who
 lands there. In order of weight:
 
 1. **Here's what I make.** The things he has built lead the page.

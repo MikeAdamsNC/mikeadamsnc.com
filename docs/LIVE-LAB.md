@@ -1,4 +1,4 @@
-# The live lab: proposal (not built; waiting on Mike)
+# The live lab: approved 2026-10-22 and built
 
 The home page's lab panel would show a few real signals from home, so the site has a
 pulse. This is the design to approve first. Nothing here is built, and no Archer locked
@@ -52,6 +52,10 @@ two hours late keeps the fun without that. Trail cam tallies are a day old by na
 2. The grill's 2-hour delay: keep it, make it longer, or show it live?
 3. Trail cam photos: keep them off, or allow one hand-picked photo a week (location data
    stripped)?
+
+**Mike's answers (2026-10-22):** approved as proposed, and trail cam photos are allowed
+with all trail cam info removed: one photo a day (the fridge's pick), stamp cropped,
+file details stripped, no camera, place or time. Item 31 amended in Archer PR #187.
 4. Approve the item 31 amendment as worded?
 
 Once those are settled: the amendment goes into Archer's `LOCKED.md` and `DECISIONS.md` as

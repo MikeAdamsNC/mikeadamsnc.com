@@ -6,13 +6,27 @@
     <p class="lede">{{ site.lede }}</p>
     <div class="btns"><a class="btn b1" href="#projects" data-cta="see_projects">See the projects</a><a class="btn b2" href="/pitch" data-cta="hero_pitch">Pitch an idea</a></div>
   </div>
-  <div class="console" data-x="THE LAB|What Mike is playing with now · live signals from home come later">
-    <div class="ch"><i></i><i></i><i></i><b>the lab</b></div>
+  <div class="console" data-x="THE LAB|{% if lab %}Live from Archer, sent {{ lab.age_min }} min ago · grill shown 2 hours late · photo has every trail cam detail removed{% else %}What Mike is playing with · live signals from home when Archer is sending{% endif %}">
+    <div class="ch"><i></i><i></i><i></i><b>the lab</b>{% if lab %}<span class="live">● live</span>{% endif %}</div>
     <div class="cl">
+      {% if lab %}
+      {% set g = lab.grill %}
+      <div class="k">grill <span class="dim">(2 hours ago)</span></div>
+      {% if g.on %}<div class="t">{{ g.cut|lower }} cooking <em class="v-worked">● {{ g.grill_f }}°F{% if g.probe_f %} · meat {{ g.probe_f }}°F{% endif %}</em></div>
+      {% else %}<div class="t">off <em class="dim">quiet</em></div>{% endif %}
+      {% set calls = {'rain': 'rain around Raleigh', 'bugs': 'bugs in the air', 'birds': 'birds migrating', 'biology': 'birds or bugs in the air', 'clear': 'clear skies', 'unknown': 'radar resting'} %}
+      <div class="k" style="margin-top:12px">raleigh_radar <span class="dim">(now)</span></div>
+      <a class="t" href="/lab/rain-or-bugs">{{ calls.get(lab.radar.call, lab.radar.call) }}{% if lab.radar.readings %} <em class="v-worked">{{ "{:,}".format(lab.radar.readings) }} readings</em>{% endif %}</a>
+      <div class="k" style="margin-top:12px">trail_cams <span class="dim">(yesterday)</span></div>
+      {% for sp in lab.trail_cams.species[:4] %}<a class="t" href="/lab/trail-cam-ai">{{ sp.name }} <em class="v-worked">{{ sp.count }}</em></a>{% else %}<div class="t dim">nothing walked by</div>{% endfor %}
+      {% if lab.photo %}<a href="/lab/trail-cam-ai" class="labpic"><img src="/lab-photo.jpg?v={{ lab.photo.v }}" alt="Today's trail cam pick: {{ lab.photo.species }}" loading="lazy"><span>today's pick · {{ lab.photo.species }}</span></a>{% endif %}
+      {% else %}
       <div class="k">experimenting_with</div>
       {% for t in site.experimenting_with %}<div class="t">→ {{ t }}</div>{% endfor %}
       <div class="k" style="margin-top:14px">latest_experiments</div>
       {% for e in experiments[:3] %}<a class="t" href="/lab/{{ e.slug }}">{{ e.slug }} <em class="v-{{ e.verdict }}">● {{ e.verdict_label|lower }}</em></a>{% endfor %}
+      <div class="t dim" style="margin-top:10px">quiet in the lab right now</div>
+      {% endif %}
     </div>
   </div>
 </section>

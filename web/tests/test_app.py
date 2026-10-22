@@ -378,3 +378,52 @@ def test_buoy_reading_is_parsed_and_in_feet(client, monkeypatch):
     monkeypatch.setattr(httpx, "get", lambda url, timeout=10: type("R", (), {"text": sample})())
     b = client.get("/api/buoy").json()
     assert b["wave_ft"] == 8.5 and b["period_s"] == 14 and b["at"] == "3:20 PM"
+
+
+# ---------- live lab ----------
+import base64  # noqa: E402
+
+JPEG = b"\xff\xd8\xff\xe0" + b"0" * 100
+
+
+def lab_body(**over):
+    return {"at": site.clock.stamp(), "grill": {"on": True, "cut": "Pork butt", "grill_f": 225, "probe_f": 160},
+            "radar": {"call": "bugs", "readings": 120000},
+            "trail_cams": {"day": "2026-10-21", "species": [{"name": "white-tailed deer", "count": 72}]}, **over}
+
+
+def test_lab_needs_archers_token(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    assert client.post("/api/lab", json=lab_body()).status_code == 403
+
+
+def test_lab_shows_on_the_home_page(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    h = {"authorization": "Bearer t0ken"}
+    assert client.post("/api/lab", headers=h, json=lab_body(photo={"jpeg_b64": base64.b64encode(JPEG).decode(), "species": "white-tailed deer", "count": 1})).status_code == 200
+    page = client.get("/").text
+    assert "pork butt cooking" in page and "bugs in the air" in page and "white-tailed deer" in page and "● live" in page
+    assert client.get("/lab-photo.jpg").content == JPEG
+
+
+def test_lab_keeps_only_fixed_fields(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    client.post("/api/lab", headers={"authorization": "Bearer t0ken"}, json=lab_body(home_address="123 Main", grill={"on": True, "cut": "Ribs", "notes": "for Lucas"}))
+    lab = site.store.get_lab()
+    assert "home_address" not in lab and "notes" not in lab["grill"]
+
+
+def test_stale_or_off_lab_goes_quiet(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    h = {"authorization": "Bearer t0ken"}
+    old = (site.clock.now() - __import__("datetime").timedelta(minutes=45)).isoformat(timespec="seconds")
+    client.post("/api/lab", headers=h, json=lab_body(at=old))
+    assert "quiet in the lab" in client.get("/").text
+    client.post("/api/lab", headers=h, json={"off": True})
+    assert "quiet in the lab" in client.get("/").text
+
+
+def test_a_non_jpeg_photo_is_refused(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    r = client.post("/api/lab", headers={"authorization": "Bearer t0ken"}, json=lab_body(photo={"jpeg_b64": base64.b64encode(b"<svg>").decode()}))
+    assert r.status_code == 400

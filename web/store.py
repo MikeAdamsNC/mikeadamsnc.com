@@ -16,6 +16,8 @@ class MemoryStore:
         self.salts: dict[str, bytes] = {}
         self.counts: dict[str, int] = {}
         self.votes: dict[str, int] = {}
+        self.lab: dict | None = None
+        self.lab_photo: bytes | None = None
         self.comments: dict[str, dict] = {}
 
     def add_pitch(self, pitch: dict) -> str:
@@ -34,6 +36,17 @@ class MemoryStore:
     def mark_told(self, pid: str) -> None:
         if pid in self.pitches:
             self.pitches[pid]["archer_told_at"] = clock.stamp()
+
+    def put_lab(self, summary: dict, photo: bytes | None) -> None:
+        self.lab = summary
+        if photo is not None:
+            self.lab_photo = photo
+
+    def get_lab(self) -> dict | None:
+        return self.lab
+
+    def get_lab_photo(self) -> bytes | None:
+        return self.lab_photo
 
     # votes: one per visitor per day per experiment; value 1, -1 or 0 (taken back)
     def vote(self, slug: str, voter: str, value: int) -> dict:
@@ -98,6 +111,26 @@ class FirestoreStore:
 
     def mark_told(self, pid: str) -> None:
         self.db.collection("pitches").document(pid).update({"archer_told_at": clock.stamp()})
+
+    def put_lab(self, summary: dict, photo: bytes | None) -> None:
+        self.db.collection("lab").document("latest").set(summary)
+        if photo is not None:
+            self.db.collection("lab").document("photo").set({"jpeg": photo, "at": clock.stamp()})
+        self._lab = None
+
+    def get_lab(self) -> dict | None:
+        import time
+
+        if getattr(self, "_lab", None) and time.time() - self._lab[0] < 60:
+            return self._lab[1]
+        snap = self.db.collection("lab").document("latest").get()
+        val = snap.to_dict() if snap.exists else None
+        self._lab = (time.time(), val)
+        return val
+
+    def get_lab_photo(self) -> bytes | None:
+        snap = self.db.collection("lab").document("photo").get()
+        return snap.get("jpeg") if snap.exists else None
 
     def vote(self, slug: str, voter: str, value: int) -> dict:
         ref = self.db.collection("votes").document(f"{slug}__{voter}")

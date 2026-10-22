@@ -216,3 +216,10 @@ a.chatbox{display:block}a.chatbox:hover{box-shadow:0 20px 40px -28px rgba(11,22,
 @media (max-width:820px){.m2s .stop{padding:10vh 16px 0;min-height:105vh}.m2s .card{padding:22px}.m2s-hud{top:auto;bottom:70px;right:12px;font-size:10px}.m2s-track{left:20px;bottom:24px}.m2s-track i{width:110px}.m2s .pj{grid-template-columns:1fr auto}.m2s .pj span:not(.pill){grid-column:1/-1;grid-row:2}}
 .sugg[hidden]{display:none}
 .m2s .stop:last-child{min-height:88vh}
+
+/* live lab */
+.ch .live{margin-left:auto;color:var(--aqua);font-size:12px;letter-spacing:.06em}
+.cl .dim{color:#8EA0AD}.t.dim{color:#8EA0AD}
+.labpic{display:block;margin-top:14px;border-radius:12px;overflow:hidden;position:relative}
+.labpic img{width:100%;aspect-ratio:16/10;object-fit:cover;filter:saturate(.9)}
+.labpic span{position:absolute;left:10px;bottom:8px;font-size:11px;background:rgba(11,22,32,.75);color:#DCE7EA;padding:3px 8px;border-radius:6px}

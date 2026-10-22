@@ -27,3 +27,8 @@ small spark.
 
 Tried and set aside: Panther blue on the main button, on the name, or on the idea band.
 Each felt forced beside Deep water.
+
+## Name
+
+Always written **MikeAdamsNC** (and MikeAdamsNC.com). Only technical identifiers such as
+the repo name and DNS zone stay lowercase.

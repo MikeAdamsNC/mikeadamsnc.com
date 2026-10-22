@@ -11,7 +11,7 @@ turns the best experiments into real things he and others actually use.
 
 ## What the brand is for
 
-A personal site, mikeadamsnc.com, that shows what he has built, says who he is, and
+A personal site, MikeAdamsNC.com, that shows what he has built, says who he is, and
 invites anyone to pitch him an idea. It is not a business and not a résumé. His day job
 never appears.
 

@@ -199,7 +199,7 @@ def test_lab_sorts_by_votes(client):
     client.post("/vote/local-ai-model", json={"value": 1})
     for sort in ["hot", "top"]:
         r = client.get(f"/lab?sort={sort}").text
-        assert r.index("The flop: a local AI model.") < r.index("My grill runs the whole cook.")
+        assert r.index("A small AI model running at home.") < r.index("My grill runs the whole cook.")
     assert client.get("/lab?sort=weird").status_code == 200
 
 

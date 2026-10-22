@@ -67,7 +67,7 @@
   status: retired
   added: 2026-10-22
 - slug: local-ai-model
-  title: "The flop: a local AI model."
+  title: "A small AI model running at home."
   hook: "Ran it to save money. Killed it a month later."
   question: "Can a small AI model on my own computer handle the small jobs and save on cloud calls?"
   used: [Ollama, Mac Mini]

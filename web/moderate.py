@@ -3,16 +3,11 @@
 "ok" posts at once; "hold" waits for Mike on the dashboard. If the AI can't be reached,
 the comment is held, never posted unchecked.
 """
-import json
 import logging
 import os
 import re
 
-import httpx
-
 log = logging.getLogger("moderate")
-MODEL = "gemini-3.8-flash"
-URL = f"https://aiplatform.googleapis.com/v1/projects/macmanager-home/locations/global/publishers/google/models/{MODEL}:generateContent"
 PROMPT = """You check comments left on a personal website's experiment pages before they're shown.
 Answer "hold" for: spam or ads, links meant to sell or scam, harassment, hate, threats, sexual content,
 someone's private information, or gibberish. Answer "ok" for anything else, including criticism,
@@ -22,23 +17,11 @@ Experiment: EXPERIMENT
 Comment: COMMENT"""
 
 
-def _token() -> str:
-    import google.auth
-    import google.auth.transport.requests
-
-    creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
-    creds.refresh(google.auth.transport.requests.Request())
-    return creds.token
-
-
 def _gemini(experiment: str, comment: str) -> tuple[str, str]:
-    body = {"contents": [{"role": "user", "parts": [{"text": PROMPT.replace("EXPERIMENT", experiment).replace("COMMENT", comment)}]}],
-            "generationConfig": {"maxOutputTokens": 300, "responseMimeType": "application/json", "temperature": 0,
-                                 "thinkingConfig": {"thinkingBudget": 0}}}
-    r = httpx.post(URL, json=body, headers={"Authorization": f"Bearer {_token()}"}, timeout=20)
-    r.raise_for_status()
-    text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-    out = json.loads(text)
+    from . import gemini
+
+    out = gemini.json_reply([{"role": "user", "parts": [{"text": PROMPT.replace("EXPERIMENT", experiment).replace("COMMENT", comment)}]}],
+                            max_tokens=2000, temperature=0)
     verdict = "ok" if out.get("verdict") == "ok" else "hold"
     return verdict, str(out.get("reason", ""))[:120]
 

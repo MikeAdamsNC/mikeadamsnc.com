@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Pitch an idea · MikeAdamsNC{% endblock %}
+{% block description %}Got an idea you want built? Talk it through, and Mike reads every one.{% endblock %}
+{% block main %}
+<section class="wrap narrow chatpage">
+  <div class="mono label">Pitch an idea</div>
+  <h1>{{ site.pitch_title }}</h1>
+  <p class="lede">Talk it through with my AI. It asks a few questions and writes it up for me. I read every one. <a href="/pitch/form" class="inline">Prefer a form?</a></p>
+  <div class="chat" id="chat" data-x="PITCH BOT|Gemini 3.8 Flash on Vertex AI · nothing is saved until you send the summary · rules in content/bot.md">
+    <div class="msgs" id="msgs" aria-live="polite"><div class="bub bot">{{ greeting }}</div></div>
+    <div class="summary" id="summary" hidden>
+      <div class="mono">Your pitch</div>
+      <dl id="sumlist"></dl>
+      <div class="sum-btns"><button class="btn b1" id="send" type="button">Send it to Mike</button><button class="btn b2" id="keep" type="button">Keep talking</button></div>
+    </div>
+    <form class="composer" id="composer" autocomplete="off">
+      <textarea id="say" rows="1" maxlength="1500" placeholder="Type your idea…" aria-label="Your message" required></textarea>
+      <button class="btn b1" type="submit" id="go">Send</button>
+    </form>
+    <p class="fine chatnote">This is an AI, not Mike. It won't promise anything; Mike decides. Don't share passwords or payment details. <a href="/privacy">Privacy</a></p>
+  </div>
+  <noscript><p class="err">The chat needs JavaScript. <a href="/pitch/form">Use the form instead</a>.</p></noscript>
+</section>
+<script src="/static/chat.js" defer></script>
+{% endblock %}

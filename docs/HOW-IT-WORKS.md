@@ -82,6 +82,29 @@ person is one visitor today and a stranger tomorrow; IP addresses are never stor
 The dashboard reads the same table: views, visitors, pages, where people came from,
 devices, scroll depth, the pitch funnel, experiments read, links clicked out.
 
+## Site versions
+
+The home page comes in versions, listed in `content/versions.yaml` and on `/versions`.
+A visitor picks one (`/?v=terminal`, `/?v=talk`, `/?v=mountains`, `/?v=classic`); the
+browser remembers it and the home page opens in that version next time. Every page view
+records which version it was, so the dashboard can tell which ones people like. All
+versions read the same content files.
+
+- **Classic:** the lab layout (the default).
+- **Terminal** (`web/static/terminal.js`): the site as a command line, reading
+  `/api/site.json` (everything public on the site, in one file). `help` lists the
+  commands; visitors can read experiments and vote from it. Each command typed is counted.
+- **Talk to it** (`web/talk.py`, instructions in `content/talk.md`): an AI (Gemini 3.8
+  Flash) answers questions using only the site's own content and links to real pages
+  (links to anywhere else are dropped). 40 questions per visitor per day, sharing the
+  pitch chat's site-wide daily cap.
+- **Mountains to Sea** (`web/static/mountains.js`): scrolling flies a camera from Mount
+  Mitchell to Cape Hatteras over real North Carolina elevation (Terrain Tiles, zoom 8,
+  saved in `web/static/m2s/`), and the sea moves at the height and rhythm of NOAA buoy
+  41025 off Cape Hatteras (`/api/buoy`, refreshed every 30 minutes). three.js is hosted
+  on the site (`web/static/vendor/`). Phones get a lighter model; visitors who turn off
+  motion get one still, overhead view instead of the flight.
+
 ## The X-ray view
 
 The λ button (or the X key) turns the page into a blueprint. Anything with a `data-x`

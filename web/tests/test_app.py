@@ -330,3 +330,51 @@ def test_browser_input_is_trimmed_and_typed():
 def test_bot_rules_load_from_content():
     r = bot.rules()
     assert "Never promise Mike will build anything" in r and "You know nothing private about Mike" in r
+
+
+# ---------- step 5: site versions ----------
+from web import talk, versions  # noqa: E402
+
+
+def test_every_version_renders_and_is_listed(client):
+    listed = client.get("/versions").text
+    for v in versions.all():
+        assert f'href="/?v={v["slug"]}"' in listed
+        assert client.get(f"/?v={v['slug']}").status_code == 200
+    assert "Mountains to Sea" in client.get("/?v=mountains").text
+    assert client.get("/?v=nonsense").status_code == 200          # unknown version = classic
+
+
+def test_version_is_counted_in_analytics(client):
+    client.get("/?v=terminal")
+    assert views("/")[-1]["version"] == "terminal"
+
+
+def test_site_json_has_everything_public_and_nothing_private(client):
+    d = client.get("/api/site.json").json()
+    assert len(d["experiments"]) == len(content.experiments()) and "up" in d["experiments"][0]
+    assert {v["slug"] for v in d["versions"]} == versions.slugs()
+    text = str(d)
+    assert "@" not in text.replace("@MikeAdamsNC", "") or "mailto" not in text
+
+
+def test_talk_answers_with_links_only_to_real_pages(client, monkeypatch):
+    out = client.post("/talk", json={"messages": [{"role": "user", "text": "how does the grill autopilot work?"}]}).json()
+    assert out["links"][0]["path"] == "/lab/grill-autopilot"
+    monkeypatch.setattr(talk, "_fake", lambda q: {"reply": "x", "links": [{"label": "evil", "path": "https://evil.com"}, {"label": "lab", "path": "/lab"}]})
+    out = client.post("/talk", json={"messages": [{"role": "user", "text": "anything"}]}).json()
+    assert out["links"] == [{"label": "lab", "path": "/lab"}]
+
+
+def test_talk_knows_the_sites_content():
+    facts = talk.site_facts()
+    assert "StartFishing" in facts and "/lab/local-ai-model" in facts and "Never" not in talk.site_facts()[:0]
+
+
+def test_buoy_reading_is_parsed_and_in_feet(client, monkeypatch):
+    import httpx
+    site._buoy.clear()
+    sample = "#YY  MM DD hh mm WDIR WSPD GST  WVHT   DPD\n#yr  mo dy hr mn degT m/s  m/s     m   sec\n2026 10 22 19 30 360 11.0 13.0    MM    MM\n2026 10 22 19 20 360 11.0 13.0   2.6    14\n"
+    monkeypatch.setattr(httpx, "get", lambda url, timeout=10: type("R", (), {"text": sample})())
+    b = client.get("/api/buoy").json()
+    assert b["wave_ft"] == 8.5 and b["period_s"] == 14 and b["at"] == "3:20 PM"

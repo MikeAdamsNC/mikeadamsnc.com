@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}MikeAdamsNC · Mountains to Sea{% endblock %}
+{% block body_class %}v-mountains{% endblock %}
+{% block main %}
+<canvas id="m2s" aria-hidden="true"></canvas>
+<div class="m2s-hud mono" id="hud" aria-hidden="true">North Carolina</div>
+<div class="m2s-track mono" aria-hidden="true"><span>MTNS</span><i><u id="prog"></u></i><span>SEA</span></div>
+<div class="m2s-label mono" id="lm" aria-hidden="true">Mount Mitchell · 6,684 ft</div>
+<div class="m2s-label mono" id="lh" aria-hidden="true">Cape Hatteras · sea level</div>
+<div class="m2s" data-x="MOUNTAINS TO SEA|Real NC elevation (terrain tiles, zoom 8) · live waves from NOAA buoy 41025 · three.js, hosted here">
+  <section class="stop"><div class="card">
+    <div class="stopname mono">01 · The mountains</div>
+    <h1>{{ site.headline }}</h1>
+    <p class="lede">{{ site.lede }}</p>
+    <p class="fine">Scroll to travel from Mount Mitchell to the Outer Banks. <a href="/?v=classic" class="inline">Classic version</a></p>
+  </div></section>
+  <section class="stop"><div class="card">
+    <div class="stopname mono">02 · The Piedmont · Projects</div>
+    {% for p in projects %}<a class="pj" href="/projects/{{ p.slug }}"><b>{{ p.name }}</b><span>{{ p.line }}</span><span class="pill">{{ p.status }}</span></a>{% endfor %}
+  </div></section>
+  <section class="stop"><div class="card">
+    <div class="stopname mono">03 · The coastal plain · The Lab</div>
+    {% for e in experiments %}<a class="lx" href="/lab/{{ e.slug }}"><em class="mono">{{ e.number }}</em><span>{{ e.title }}</span></a>{% endfor %}
+  </div></section>
+  <section class="stop"><div class="card">
+    <div class="stopname mono">04 · The sea · Pitch an idea</div>
+    <h2>{{ site.pitch_title }}</h2>
+    <p class="lede">{{ site.pitch_line }}</p>
+    <a class="btn b1" href="/pitch">Pitch an idea</a>
+    <div class="buoy mono" id="buoy">≈ Diamond Shoals buoy · waves loading</div>
+  </div></section>
+</div>
+<script type="importmap">{"imports":{"three":"/static/vendor/three.module.min.js"}}</script>
+<script type="module" src="/static/mountains.js"></script>
+{% endblock %}

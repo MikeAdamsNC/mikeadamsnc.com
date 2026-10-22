@@ -15,14 +15,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/site.css">
+<script>/* remember the visitor's chosen version of the home page */
+(()=>{try{const q=new URLSearchParams(location.search).get("v");if(q){localStorage.setItem("site-version",q);return}
+const v=localStorage.getItem("site-version");if(location.pathname==="/"&&v&&v!=="classic")location.replace("/?v="+encodeURIComponent(v)+location.hash)}catch(_){}})();</script>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 <header class="top wrap">
   <a href="/" class="logo" data-x="LOGO|Manrope + two custom peaks (the mountains) · drawn by brand/build_logo.py"><img src="/brand/logo/mikeadamsnc.svg" alt="MikeAdamsNC"></a>
-  <nav class="links"><a href="/#projects">Projects</a><a href="/lab">Lab</a><a href="/#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
+  <nav class="links"><a href="/?v=classic#projects">Projects</a><a href="/lab">Lab</a><a href="/versions">Versions</a><a href="/?v=classic#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
   <details class="menu">
     <summary aria-label="Menu"><span></span><span></span></summary>
-    <nav><a href="/#projects">Projects</a><a href="/lab">Lab</a><a href="/#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
+    <nav><a href="/?v=classic#projects">Projects</a><a href="/lab">Lab</a><a href="/versions">Versions</a><a href="/?v=classic#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
   </details>
 </header>
 <main>{% block main %}{% endblock %}</main>
@@ -43,7 +46,8 @@
     <dt>Pages served today</dt><dd>{{ "{:,}".format(xray.pages_today) if xray.pages_today is not none else "counting" }}</dd>
     <dt>Cost this month</dt><dd>≈ $0 (free tier)</dd>
     <dt>Analytics</dt><dd>Our own · no cookies</dd>
-    <dt>Version</dt><dd>{{ xray.revision }}</dd>
+    <dt>Site version</dt><dd><a href="/versions">{{ (version or "classic")|capitalize }} ↗</a></dd>
+    <dt>Build</dt><dd>{{ xray.revision }}</dd>
     <dt>Last deploy</dt><dd>{{ xray.deployed }}</dd>
   </dl>
   <p>Press X or tap λ to close.</p>

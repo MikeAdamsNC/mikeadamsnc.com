@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Versions · MikeAdamsNC{% endblock %}
+{% block description %}The site itself is an experiment. Pick a version.{% endblock %}
+{% block main %}
+<section class="wrap page-head">
+  <div class="mono label">Versions</div>
+  <h1>The site is an experiment too.</h1>
+  <p class="lede">Same content, different ways in. Pick one; your browser remembers it, and you can switch back any time.</p>
+</section>
+<section class="wrap sec grid-exp" data-x="VERSIONS|All read content/*.yaml · picks are counted in analytics">
+  {% for v in versions %}
+  <a class="exp ver" href="/?v={{ v.slug }}" data-version="{{ v.slug }}">
+    <div class="exp-link"><div class="exp-top"><span class="mono">VERSION {{ loop.index }}</span>{% if v.slug == 'classic' %}<span class="pill">Default</span>{% endif %}</div>
+    <h3>{{ v.name }}</h3><p>{{ v.line }}</p><p class="tried"><b>The question:</b> {{ v.tried }}</p></div>
+    <div class="exp-foot"><span class="mono status">Since {{ v.added }}</span><span class="more">Try it →</span></div>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ e.title }} · The Lab · MikeAdamsNC{% endblock %}
+{% block description %}{{ e.hook }}{% endblock %}
+{% block main %}
+<article class="wrap article">
+  <a href="/lab" class="back mono">← The Lab</a>
+  <div class="exp-top"><span class="mono">{{ e.number }} · {{ e.status_label }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></div>
+  <h1>{{ e.title }}</h1>
+  <p class="lede">{{ e.hook }}</p>
+  <div class="facts" data-x="LAB NOTES|Every experiment has the same four parts">
+    <div><h4>The question</h4><p>{{ e.question }}</p></div>
+    <div><h4>What I used</h4><div class="tools">{% for t in e.used %}<span>{{ t }}</span>{% endfor %}</div></div>
+    <div><h4>What happened</h4><p>{{ e.result }}</p></div>
+    <div class="vbox v-{{ e.verdict }}"><h4>Verdict: {{ e.verdict_label }}</h4><p>{{ e.verdict_line }}</p></div>
+  </div>
+  <nav class="next">
+    {% set i = experiments.index(e) %}
+    {% if i > 0 %}<a href="/lab/{{ experiments[i-1].slug }}">← {{ experiments[i-1].title }}</a>{% else %}<span></span>{% endif %}
+    {% if i < experiments|length - 1 %}<a href="/lab/{{ experiments[i+1].slug }}">{{ experiments[i+1].title }} →</a>{% endif %}
+  </nav>
+</article>
+{% endblock %}

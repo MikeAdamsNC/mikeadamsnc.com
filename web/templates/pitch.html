@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Pitch an idea · MikeAdamsNC{% endblock %}
+{% block description %}Got an idea you want built? Pitch it.{% endblock %}
+{% block main %}
+<section class="wrap narrow">
+  <div class="mono label">Pitch an idea</div>
+  <h1>{{ site.pitch_title }}</h1>
+  <p class="lede">{{ site.pitch_line }} Only the first question is required.</p>
+  {% if error %}<p class="err" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="/pitch" class="form" data-x="THE FORM|Saved to Firestore · Archer tells Mike on his phone · spam trap + daily limit">
+    <input type="hidden" name="started" value="{{ started }}">
+    <div class="trap" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <label class="q"><span>What is it?</span><small>A sentence or two is plenty.</small>
+      <textarea name="what" rows="4" required minlength="10" maxlength="4000">{{ form.what }}</textarea></label>
+    <fieldset class="q"><legend>Is it an app, a website, or something else?</legend>
+      <div class="chips">{% for k in kinds %}<label><input type="radio" name="kind" value="{{ k }}" {{ 'checked' if form.kind == k }}><span>{{ k }}</span></label>{% endfor %}</div></fieldset>
+    <fieldset class="q"><legend>What's it for?</legend>
+      <div class="chips">{% for k in purposes %}<label><input type="radio" name="purpose" value="{{ k }}" {{ 'checked' if form.purpose == k }}><span>{{ k }}</span></label>{% endfor %}</div></fieldset>
+    <fieldset class="q"><legend>Who pays whom?</legend>
+      <div class="chips">{% for k in pay %}<label><input type="radio" name="payment" value="{{ k }}" {{ 'checked' if form.payment == k }}><span>{{ k }}</span></label>{% endfor %}</div></fieldset>
+    <label class="q"><span>Design or feature ideas</span><textarea name="features" rows="3" maxlength="4000">{{ form.features }}</textarea></label>
+    <label class="q"><span>How would people find out about it?</span><textarea name="marketing" rows="2" maxlength="4000">{{ form.marketing }}</textarea></label>
+    <div class="two">
+      <label class="q"><span>Your name</span><input name="name" maxlength="200" autocomplete="name" value="{{ form.name }}"></label>
+      <label class="q"><span>Email, so I can reply</span><input name="email" type="email" maxlength="200" autocomplete="email" value="{{ form.email }}"></label>
+    </div>
+    <button class="btn b1" type="submit">Send my idea</button>
+    <p class="fine">I'll only use your email to reply about this idea. <a href="/privacy">Privacy</a>.</p>
+  </form>
+</section>
+{% endblock %}

@@ -104,6 +104,8 @@ Each step ships on its own.
 
 1. **Core site:** Classic version with the real content, X-ray, the Lab with experiment
    entries, the plain idea form, analytics from day one, private dashboard and queue.
+   Built 2026-10-22; on the preview address; goes live when Mike has looked. The
+   dashboard waits for the Google sign-in client.
 2. **Votes and comments:** Sign in with Google, AI moderation, privacy page.
 3. **Pitch bot** with site suggestions (starts with Mike's voice interview).
 4. **Live lab** (after the Archer locked-item decision).

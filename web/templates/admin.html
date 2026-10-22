@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · MikeAdamsNC{% endblock %}
+{% block main %}
+{% set s = stats.summary %}
+<section class="wrap admin">
+  <div class="sec-head"><div><div class="mono label">Private · {{ me }}</div><h1>Dashboard</h1></div>
+    <div class="range"><a href="/admin?days=7" class="{{ 'on' if days == 7 }}">7 days</a><a href="/admin?days=30" class="{{ 'on' if days == 30 }}">30 days</a><a href="/admin/logout">Sign out</a></div></div>
+  <div class="tiles">
+    <div><b>{{ s.views or 0 }}</b><span>page views</span></div>
+    <div><b>{{ s.visitor_days or 0 }}</b><span>visitors (per day)</span></div>
+    <div><b>{{ pitches|selectattr('status','equalto','new')|list|length }}</b><span>new pitches</span></div>
+    <div><b>{{ s.xray or 0 }}</b><span>X-ray opens</span></div>
+    <div><b>{{ s.avg_ms or '—' }}</b><span>avg ms per page</span></div>
+  </div>
+  {% set top = (stats.daily|map(attribute='views')|max) if stats.daily else 1 %}
+  <div class="panel"><h3>Views by day</h3><div class="bars">{% for d in stats.daily %}<div title="{{ d.day }}: {{ d.views }} views, {{ d.visitors }} visitors"><i style="height:{{ (d.views / top * 100)|round }}%"></i><span>{{ d.day[5:] }}</span></div>{% else %}<p class="fine">No visits yet.</p>{% endfor %}</div></div>
+  <div class="cols">
+    <div class="panel"><h3>Top pages</h3>{% for r in stats.pages %}<div class="kv"><span>{{ r.path }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+    <div class="panel"><h3>Where visitors came from</h3>{% for r in stats.referrers %}<div class="kv"><span>{{ r.source }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+    <div class="panel"><h3>Devices</h3>{% for r in stats.devices %}<div class="kv"><span>{{ r.device }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+    <div class="panel"><h3>How far people scroll (home)</h3>{% for r in stats.scroll %}<div class="kv"><span>{{ r.depth }}%</span><b>{{ r.visits }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+    <div class="panel"><h3>Pitch funnel</h3>{% set f = stats.funnel %}<div class="kv"><span>Saw the form</span><b>{{ f.form_views or 0 }}</b></div><div class="kv"><span>Started typing</span><b>{{ f.started or 0 }}</b></div><div class="kv"><span>Sent</span><b>{{ f.sent or 0 }}</b></div></div>
+    <div class="panel"><h3>Experiments read</h3>{% for r in stats.experiments %}<div class="kv"><span>{{ r.path[5:] }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+    <div class="panel"><h3>Links clicked out</h3>{% for r in stats.outbound %}<div class="kv"><span>{{ r.link }}</span><b>{{ r.clicks }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
+  </div>
+  <h2 id="pitches" class="h2">Pitches</h2>
+  {% for p in pitches %}
+  <div class="pitch-item st-{{ p.status }}">
+    <div class="pi-top"><span class="mono">{{ p.created_at[:16]|replace('T',' ') }} · {{ p.device }}</span>
+      <form method="post" action="/admin/pitches/{{ p.id }}">{% for st in ['new','maybe','building','done','no'] %}<button name="status" value="{{ st }}" class="{{ 'on' if p.status == st }}">{{ st }}</button>{% endfor %}</form></div>
+    <p class="pi-what">{{ p.what }}</p>
+    <div class="pi-meta">{% for k in ['kind','purpose','payment'] if p[k] %}<span>{{ p[k] }}</span>{% endfor %}</div>
+    {% if p.features %}<p><b>Ideas:</b> {{ p.features }}</p>{% endif %}
+    {% if p.marketing %}<p><b>Marketing:</b> {{ p.marketing }}</p>{% endif %}
+    <p class="fine">{{ p.name or 'No name' }}{% if p.email %} · <a href="mailto:{{ p.email }}">{{ p.email }}</a>{% endif %}</p>
+  </div>
+  {% else %}<p class="fine">No pitches yet.</p>{% endfor %}
+</section>
+{% endblock %}

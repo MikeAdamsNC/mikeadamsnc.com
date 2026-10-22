@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} · MikeAdamsNC{% endblock %}
+{% block description %}{{ p.line }}{% endblock %}
+{% block main %}
+<article class="wrap article">
+  <a href="/#projects" class="back mono">← Projects</a>
+  <div class="exp-top"><span class="mono">{{ p.kind }}</span><span class="pill">{{ p.status }}</span></div>
+  <h1>{{ p.name }}</h1>
+  <p class="lede">{{ p.line }}</p>
+  <div class="shot big" data-x="PICTURE|{{ 'The live site' if p.link else 'Illustration · real screenshots with demo data coming' }}"><img src="/static/{{ p.image }}" alt="{{ p.name }}"></div>
+  <p class="body">{{ p.body }}</p>
+  <div class="tools">{% for t in p.built_with %}<span>{{ t }}</span>{% endfor %}</div>
+  {% if p.link %}<a class="btn b1" href="{{ p.link }}" target="_blank" rel="noopener">Visit {{ p.name }} ↗</a>{% endif %}
+</article>
+{% endblock %}

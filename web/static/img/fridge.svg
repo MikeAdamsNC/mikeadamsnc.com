@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#E4EEEE"/>
+  <rect x="150" y="40" width="500" height="420" rx="34" fill="#0B1620"/>
+  <rect x="172" y="62" width="456" height="376" rx="18" fill="#F2F6F6"/>
+  <text x="196" y="102" font-family="Manrope,sans-serif" font-weight="800" font-size="26" fill="#0B1620">Thursday</text>
+  <text x="196" y="126" font-family="JetBrains Mono,monospace" font-size="13" fill="#56676F">OCT 22</text>
+  <rect x="470" y="80" width="138" height="60" rx="12" fill="#0B6E7A"/>
+  <text x="488" y="118" font-family="Manrope,sans-serif" font-weight="800" font-size="28" fill="#fff">68°</text>
+  <circle cx="574" cy="108" r="14" fill="#7FD6CF"/>
+  <g font-family="JetBrains Mono,monospace" font-size="11" fill="#56676F">
+    <text x="196" y="168">M</text><text x="254" y="168">T</text><text x="312" y="168">W</text><text x="370" y="168">T</text><text x="428" y="168">F</text>
+  </g>
+  <g fill="#fff" stroke="#D7E2E3">
+    <rect x="196" y="178" width="50" height="110" rx="8"/><rect x="254" y="178" width="50" height="110" rx="8"/><rect x="312" y="178" width="50" height="110" rx="8"/><rect x="370" y="178" width="50" height="110" rx="8" stroke="#0B6E7A" stroke-width="2"/><rect x="428" y="178" width="50" height="110" rx="8"/>
+  </g>
+  <g fill="#7FD6CF"><rect x="202" y="190" width="38" height="14" rx="4"/><rect x="318" y="214" width="38" height="14" rx="4"/><rect x="376" y="190" width="38" height="14" rx="4"/><rect x="434" y="238" width="38" height="14" rx="4"/></g>
+  <g fill="#0B6E7A"><rect x="260" y="226" width="38" height="14" rx="4"/><rect x="376" y="250" width="38" height="14" rx="4"/></g>
+  <rect x="496" y="160" width="112" height="128" rx="12" fill="#fff" stroke="#D7E2E3"/>
+  <text x="510" y="184" font-family="JetBrains Mono,monospace" font-size="11" fill="#0B6E7A">GROCERIES</text>
+  <g fill="#D7E2E3"><rect x="510" y="198" width="80" height="8" rx="4"/><rect x="510" y="216" width="64" height="8" rx="4"/><rect x="510" y="234" width="72" height="8" rx="4"/><rect x="510" y="252" width="50" height="8" rx="4"/></g>
+  <rect x="196" y="306" width="200" height="110" rx="12" fill="#0B1620"/>
+  <path d="M206 400 L246 352 L270 380 L300 340 L340 400 Z" fill="#0B6E7A"/>
+  <text x="212" y="330" font-family="JetBrains Mono,monospace" font-size="11" fill="#7FD6CF">TRAIL CAM · DEER</text>
+  <rect x="410" y="306" width="198" height="110" rx="12" fill="#fff" stroke="#D7E2E3"/>
+  <text x="426" y="332" font-family="JetBrains Mono,monospace" font-size="11" fill="#0B6E7A">GRILL · 203°F</text>
+  <path d="M426 396 C 470 392, 500 360, 540 352 S 590 346, 594 344" fill="none" stroke="#0B6E7A" stroke-width="4" stroke-linecap="round"/>
+</svg>

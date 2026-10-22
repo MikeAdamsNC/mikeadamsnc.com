@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}MikeAdamsNC{% endblock %}</title>
+<meta name="description" content="{% block description %}{{ site.lede }}{% endblock %}">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.description() }}">
+<meta property="og:image" content="https://mikeadamsnc.com/brand/icon/icon-512.png">
+<meta name="theme-color" content="#F2F6F6">
+<link rel="icon" type="image/svg+xml" href="/brand/icon/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/icon/favicon-32.png">
+<link rel="apple-touch-icon" href="/brand/icon/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+<header class="top wrap">
+  <a href="/" class="logo" data-x="LOGO|Manrope + two custom peaks (the mountains) · drawn by brand/build_logo.py"><img src="/brand/logo/mikeadamsnc.svg" alt="MikeAdamsNC"></a>
+  <nav class="links"><a href="/#projects">Projects</a><a href="/lab">Lab</a><a href="/#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
+  <details class="menu">
+    <summary aria-label="Menu"><span></span><span></span></summary>
+    <nav><a href="/#projects">Projects</a><a href="/lab">Lab</a><a href="/#about">About</a><a href="/pitch" class="hl">Pitch an idea</a></nav>
+  </details>
+</header>
+<main>{% block main %}{% endblock %}</main>
+<footer class="wrap foot" data-x="THE SERVER|Cloud Run, us-east1 · this page took {{ xray.server_ms }} ms to build · free tier">
+  <a href="/" class="mk"><img src="/brand/icon/icon.svg" alt=""></a>
+  <nav class="soc">{% for s in site.socials %}<a href="{{ s.url }}" rel="me noopener" target="_blank">{{ s.name }}</a>{% endfor %}</nav>
+  <span class="mono">© {{ year }} · <a href="/privacy">Privacy</a></span>
+</footer>
+
+<button class="lam" type="button" aria-pressed="false" title="X-ray: see how this page is built (press X)"><b>λ</b><span>X-ray</span></button>
+<aside class="xside" aria-hidden="true">
+  <h4>How this page works</h4>
+  <dl>
+    <dt>Server</dt><dd>Cloud Run</dd>
+    <dt>Region</dt><dd>us-east1</dd>
+    <dt>Built with</dt><dd>Claude Code</dd>
+    <dt>This page</dt><dd>{{ xray.server_ms }} ms</dd>
+    <dt>Pages served today</dt><dd>{{ "{:,}".format(xray.pages_today) if xray.pages_today is not none else "counting" }}</dd>
+    <dt>Cost this month</dt><dd>≈ $0 (free tier)</dd>
+    <dt>Analytics</dt><dd>Our own · no cookies</dd>
+    <dt>Version</dt><dd>{{ xray.revision }}</dd>
+    <dt>Last deploy</dt><dd>{{ xray.deployed }}</dd>
+  </dl>
+  <p>Press X or tap λ to close.</p>
+</aside>
+<script src="/static/site.js" defer></script>
+</body>
+</html>

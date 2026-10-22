@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Private · MikeAdamsNC{% endblock %}
+{% block main %}
+<section class="wrap narrow thanks">
+  <div class="mono label">Private</div>
+  {% if denied %}<h1>That account can't come in.</h1><p class="lede">These pages are for Mike only.</p>
+  {% else %}<h1>Sign-in isn't set up yet.</h1><p class="lede">Mike's dashboard turns on once Google sign-in is connected.</p>{% endif %}
+</section>
+{% endblock %}

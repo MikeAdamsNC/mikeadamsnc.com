@@ -29,9 +29,9 @@
 
 <section class="wrap sec">
   <div class="sec-head"><div class="mono label">Experiment log</div><a href="/lab" class="more">The whole Lab →</a></div>
-  <div class="log" data-x="EXPERIMENT LOG|{{ experiments|length }} entries · {{ experiments|selectattr('verdict','equalto','flop')|list|length }} flop · lives in content/experiments.yaml">
+  <div class="log" data-x="EXPERIMENT LOG|{{ experiments|length }} entries · {{ experiments|selectattr('verdict','equalto','flop')|list|length }} flop · sorted Hot (votes + newness)">
     {% for e in experiments %}
-    <a class="le" href="/lab/{{ e.slug }}"><span class="mono">{{ e.number }}</span><b>{{ e.title }}</b><span class="hook">{{ e.hook }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></a>
+    <a class="le" href="/lab/{{ e.slug }}"><span class="mono">{{ e.number }}</span><b>{{ e.title }}</b><span class="hook">{{ e.hook }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span>{% set t = tallies.get(e.slug, {"up": 0, "down": 0}) %}<span class="score mono" title="{{ t.up }} up, {{ t.down }} down">▲ {{ t.up - t.down }}</span></a>
     {% endfor %}
   </div>
 </section>

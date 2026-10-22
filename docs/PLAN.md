@@ -106,7 +106,8 @@ Each step ships on its own.
    entries, the plain idea form, analytics from day one, private dashboard and queue.
    Built 2026-10-22; on the preview address; goes live when Mike has looked. The
    dashboard waits for the Google sign-in client.
-2. **Votes and comments:** Sign in with Google, AI moderation, privacy page.
+2. **Votes and comments:** Sign in with Google, AI moderation, privacy page. Built
+   2026-10-22.
 3. **Pitch bot** with site suggestions (starts with Mike's voice interview).
 4. **Live lab** (after the Archer locked-item decision).
 5. **Site versions:** Mountains to Sea, then Terminal and Talk to it.

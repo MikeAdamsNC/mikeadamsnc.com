@@ -10,7 +10,8 @@
     <div><b>{{ s.visitor_days or 0 }}</b><span>visitors (per day)</span></div>
     <div><b>{{ pitches|selectattr('status','equalto','new')|list|length }}</b><span>new pitches</span></div>
     <div><b>{{ s.xray or 0 }}</b><span>X-ray opens</span></div>
-    <div><b>{{ s.avg_ms or '—' }}</b><span>avg ms per page</span></div>
+    <div><b>{{ s.votes or 0 }}</b><span>votes</span></div>
+    <div><b>{{ held|length }}</b><span>comments held</span></div>
   </div>
   {% set top = (stats.daily|map(attribute='views')|max) if stats.daily else 1 %}
   <div class="panel"><h3>Views by day</h3><div class="bars">{% for d in stats.daily %}<div title="{{ d.day }}: {{ d.views }} views, {{ d.visitors }} visitors"><i style="height:{{ (d.views / top * 100)|round }}%"></i><span>{{ d.day[5:] }}</span></div>{% else %}<p class="fine">No visits yet.</p>{% endfor %}</div></div>
@@ -23,6 +24,14 @@
     <div class="panel"><h3>Experiments read</h3>{% for r in stats.experiments %}<div class="kv"><span>{{ r.path[5:] }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
     <div class="panel"><h3>Links clicked out</h3>{% for r in stats.outbound %}<div class="kv"><span>{{ r.link }}</span><b>{{ r.clicks }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
   </div>
+  <div class="panel"><h3>Votes by experiment</h3>{% for v in votes %}<div class="kv"><span>{{ v.slug }}</span><b>▲ {{ v.up }} · ▼ {{ v.down }}</b></div>{% else %}<p class="fine">No votes yet.</p>{% endfor %}</div>
+  <h2 id="comments" class="h2">Comments</h2>
+  {% for c in held %}
+  <div class="pitch-item st-new"><div class="pi-top"><span class="mono">HELD · {{ c.reason }} · {{ c.slug }} · {{ c.created_at[:16]|replace('T',' ') }}</span>
+    <form method="post" action="/admin/comments/{{ c.id }}"><button name="status" value="visible">approve</button><button name="status" value="removed">remove</button></form></div>
+    <p class="pi-what">{{ c.text }}</p><p class="fine">{{ c.name }} · {{ c.email }}</p></div>
+  {% else %}<p class="fine">Nothing held.</p>{% endfor %}
+  {% if recent %}<div class="panel"><h3>Recent comments</h3>{% for c in recent %}<div class="kv"><span>{{ c.slug }} · {{ c.name }}: {{ c.text[:90] }}</span><form method="post" action="/admin/comments/{{ c.id }}"><button class="x" name="status" value="removed">remove</button></form></div>{% endfor %}</div>{% endif %}
   <h2 id="pitches" class="h2">Pitches</h2>
   {% for p in pitches %}
   <div class="pitch-item st-{{ p.status }}">

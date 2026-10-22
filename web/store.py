@@ -15,6 +15,8 @@ class MemoryStore:
         self.pitches: dict[str, dict] = {}
         self.salts: dict[str, bytes] = {}
         self.counts: dict[str, int] = {}
+        self.votes: dict[str, int] = {}
+        self.comments: dict[str, dict] = {}
 
     def add_pitch(self, pitch: dict) -> str:
         pid = uuid.uuid4().hex[:12]
@@ -32,6 +34,39 @@ class MemoryStore:
     def mark_told(self, pid: str) -> None:
         if pid in self.pitches:
             self.pitches[pid]["archer_told_at"] = clock.stamp()
+
+    # votes: one per visitor per day per experiment; value 1, -1 or 0 (taken back)
+    def vote(self, slug: str, voter: str, value: int) -> dict:
+        self.votes[f"{slug}__{voter}"] = value
+        return self.tally(slug)
+
+    def tally(self, slug: str) -> dict:
+        vals = [v for k, v in self.votes.items() if k.startswith(slug + "__")]
+        return {"up": vals.count(1), "down": vals.count(-1)}
+
+    def tallies(self) -> dict[str, dict]:
+        return {slug: self.tally(slug) for slug in {k.split("__")[0] for k in self.votes}}
+
+    def my_vote(self, slug: str, voter: str) -> int:
+        return self.votes.get(f"{slug}__{voter}", 0)
+
+    # comments
+    def add_comment(self, c: dict) -> str:
+        cid = uuid.uuid4().hex[:12]
+        self.comments[cid] = {"id": cid, **c}
+        return cid
+
+    def list_comments(self, slug: str | None = None, statuses: tuple = ("visible",)) -> list[dict]:
+        out = [c for c in self.comments.values() if (slug is None or c["slug"] == slug) and c["status"] in statuses]
+        return sorted(out, key=lambda c: c["created_at"])
+
+    def set_comment(self, cid: str, status: str) -> None:
+        if cid in self.comments:
+            self.comments[cid]["status"] = status
+
+    def mark_comment_told(self, cid: str) -> None:
+        if cid in self.comments:
+            self.comments[cid]["archer_told_at"] = clock.stamp()
 
     def daily_salt(self, day: str) -> bytes:
         return self.salts.setdefault(day, secrets.token_bytes(32))
@@ -63,6 +98,48 @@ class FirestoreStore:
 
     def mark_told(self, pid: str) -> None:
         self.db.collection("pitches").document(pid).update({"archer_told_at": clock.stamp()})
+
+    def vote(self, slug: str, voter: str, value: int) -> dict:
+        ref = self.db.collection("votes").document(f"{slug}__{voter}")
+        ref.set({"slug": slug, "value": value, "at": clock.stamp()})
+        return self.tally(slug)
+
+    def tally(self, slug: str) -> dict:
+        q = self.db.collection("votes").where("slug", "==", slug)
+        vals = [d.get("value") for d in q.stream()]
+        return {"up": vals.count(1), "down": vals.count(-1)}
+
+    def tallies(self) -> dict[str, dict]:
+        out: dict[str, dict] = {}
+        for d in self.db.collection("votes").stream():
+            t = out.setdefault(d.get("slug"), {"up": 0, "down": 0})
+            if d.get("value") == 1:
+                t["up"] += 1
+            elif d.get("value") == -1:
+                t["down"] += 1
+        return out
+
+    def my_vote(self, slug: str, voter: str) -> int:
+        snap = self.db.collection("votes").document(f"{slug}__{voter}").get()
+        return snap.get("value") if snap.exists else 0
+
+    def add_comment(self, c: dict) -> str:
+        ref = self.db.collection("comments").document()
+        ref.set(c)
+        return ref.id
+
+    def list_comments(self, slug: str | None = None, statuses: tuple = ("visible",)) -> list[dict]:
+        q = self.db.collection("comments")
+        if slug:
+            q = q.where("slug", "==", slug)
+        out = [{"id": d.id, **d.to_dict()} for d in q.stream()]
+        return sorted([c for c in out if c.get("status") in statuses], key=lambda c: c["created_at"])
+
+    def set_comment(self, cid: str, status: str) -> None:
+        self.db.collection("comments").document(cid).update({"status": status, "status_at": clock.stamp()})
+
+    def mark_comment_told(self, cid: str) -> None:
+        self.db.collection("comments").document(cid).update({"archer_told_at": clock.stamp()})
 
     def daily_salt(self, day: str) -> bytes:
         """A random salt per Eastern day. Yesterday's is deleted, so ids can't be linked across days."""

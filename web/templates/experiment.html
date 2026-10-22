@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_vote.html" import thumbs %}
 {% block title %}{{ e.title }} · The Lab · MikeAdamsNC{% endblock %}
 {% block description %}{{ e.hook }}{% endblock %}
 {% block main %}
@@ -7,12 +8,31 @@
   <div class="exp-top"><span class="mono">{{ e.number }} · {{ e.status_label }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></div>
   <h1>{{ e.title }}</h1>
   <p class="lede">{{ e.hook }}</p>
+  <div class="vote-row" data-x="VOTES|No sign-in · one per visitor per day · pushes it up or down the Lab">{{ thumbs(e.slug, tally, my_vote) }}<span class="fine">Worth it? Vote it up or down.</span></div>
   <div class="facts" data-x="LAB NOTES|Every experiment has the same four parts">
     <div><h4>The question</h4><p>{{ e.question }}</p></div>
     <div><h4>What I used</h4><div class="tools">{% for t in e.used %}<span>{{ t }}</span>{% endfor %}</div></div>
     <div><h4>What happened</h4><p>{{ e.result }}</p></div>
     <div class="vbox v-{{ e.verdict }}"><h4>Verdict: {{ e.verdict_label }}</h4><p>{{ e.verdict_line }}</p></div>
   </div>
+  <section class="comments" id="comments" data-x="COMMENTS|Sign in with Google · an AI checks each one first (Gemini 3.8 Flash) · Mike can remove anything">
+    <h2>Comments <span class="mono">{{ comments|length }}</span></h2>
+    {% for c in comments %}
+    <div class="cm"><div class="cm-top"><b>{{ c.name }}</b><span class="mono">{{ c.created_at[:10] }}</span></div><p>{{ c.text }}</p></div>
+    {% else %}<p class="fine">No comments yet. Be the first.</p>{% endfor %}
+    {% for c in mine_held %}<div class="cm held"><div class="cm-top"><b>{{ c.name }}</b><span class="mono">waiting for a check</span></div><p>{{ c.text }}</p></div>{% endfor %}
+    {% if held %}<p class="note" role="status">Thanks. Your comment is waiting for a quick check before it shows.</p>{% endif %}
+    {% if error == 'length' %}<p class="err" role="alert">Comments need a few words, and at most 2,000 characters.</p>{% endif %}
+    {% if error == 'limit' %}<p class="err" role="alert">That's the limit for today. Come back tomorrow.</p>{% endif %}
+    {% if signed_in %}
+    <form method="post" action="/lab/{{ e.slug }}/comments" class="cform">
+      <label class="q"><span>Add a comment as {{ signed_in.name }}</span><textarea name="text" rows="3" minlength="2" maxlength="2000" required></textarea></label>
+      <div class="cform-foot"><button class="btn b1" type="submit">Post</button><a class="fine" href="/logout?next=/lab/{{ e.slug }}">Sign out</a></div>
+    </form>
+    {% elif signin_on %}
+    <a class="btn b2 gbtn" href="/login?next=/lab/{{ e.slug }}%23comments"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.8-.4-4H24v7.5h12c-.2 2-1.6 5-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.4l-7.1-5.5c-1.9 1.3-4.4 2.2-7.4 2.2-5.7 0-10.5-3.8-12.2-9l-7.3 5.7C8.1 41.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.8 28.3c-.4-1.3-.7-2.8-.7-4.3s.3-3 .7-4.3l-7.3-5.7C3 17 2 20.4 2 24s1 7 2.5 10z"/><path fill="#EA4335" d="M24 10.7c4.1 0 6.9 1.8 8.5 3.3l6.3-6.1C34.9 4.2 29.9 2 24 2 15.4 2 8.1 6.9 4.5 14l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/></svg>Sign in with Google to comment</a>
+    {% endif %}
+  </section>
   <nav class="next">
     {% set i = experiments.index(e) %}
     {% if i > 0 %}<a href="/lab/{{ experiments[i-1].slug }}">← {{ experiments[i-1].title }}</a>{% else %}<span></span>{% endif %}

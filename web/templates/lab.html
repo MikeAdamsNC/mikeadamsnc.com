@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_vote.html" import thumbs %}
 {% block title %}The Lab · MikeAdamsNC{% endblock %}
 {% block description %}Experiments, one-off tests and showcases, flops included.{% endblock %}
 {% block main %}
@@ -7,14 +8,22 @@
   <h1>Experiments, flops included.</h1>
   <p class="lede">Some of these became things I use every day. One didn't. They all get the same honest write-up.</p>
 </section>
-<section class="wrap sec grid-exp" data-x="THE LAB|{{ experiments|length }} experiments · newest first · voting comes next">
+<section class="wrap">
+  <nav class="tabs" aria-label="Sort experiments" data-x="RANKING|Hot = votes weighted by how new it is (Reddit's idea) · New · Top">
+    {% for k, label in [('hot','Hot'),('new','New'),('top','Top')] %}<a href="/lab?sort={{ k }}" class="{{ 'on' if sort == k }}">{{ label }}</a>{% endfor %}
+  </nav>
+</section>
+<section class="wrap sec grid-exp" data-x="THE LAB|{{ experiments|length }} experiments · thumbs need no sign-in · one vote per visitor per day">
   {% for e in experiments %}
-  <a class="exp" href="/lab/{{ e.slug }}">
-    <div class="exp-top"><span class="mono">{{ e.number }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></div>
-    <h3>{{ e.title }}</h3><p>{{ e.hook }}</p>
-    <div class="tools">{% for t in e.used %}<span>{{ t }}</span>{% endfor %}</div>
-    <span class="mono status">{{ e.status_label }}</span>
-  </a>
+  {% set t = tallies.get(e.slug, {'up': 0, 'down': 0}) %}
+  <div class="exp">
+    <a class="exp-link" href="/lab/{{ e.slug }}">
+      <div class="exp-top"><span class="mono">{{ e.number }}</span><span class="verdict v-{{ e.verdict }}">{{ e.verdict_label }}</span></div>
+      <h3>{{ e.title }}</h3><p>{{ e.hook }}</p>
+      <div class="tools">{% for u in e.used %}<span>{{ u }}</span>{% endfor %}</div>
+    </a>
+    <div class="exp-foot"><span class="mono status">{{ e.status_label }}</span>{{ thumbs(e.slug, t, mine.get(e.slug, 0)) }}</div>
+  </div>
   {% endfor %}
 </section>
 {% endblock %}

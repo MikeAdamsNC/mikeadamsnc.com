@@ -35,11 +35,31 @@ building, done, no) on the dashboard.
 `secrets/archer.env`), pushes each new pitch, and marks it sent. Archer reaches out to
 the site; the site can't reach Archer.
 
+## Votes and comments
+
+**Thumbs:** anyone can vote an experiment up or down without signing in: one vote per
+visitor per day (the same anonymous daily code as analytics), stored in Firestore
+`votes`; tapping the same thumb again takes the vote back. The browser remembers the
+vote so the button stays lit.
+
+**Ranking:** the Lab sorts Hot by default (`web/ranking.py`): the net score on a log
+scale plus a head start for newer experiments (each experiment's `added` date in
+`content/experiments.yaml`), Reddit's idea with one change so a single vote counts. New
+and Top are the other tabs. The home page's experiment log is in Hot order too.
+
+**Comments:** need Sign in with Google (the name on the account is shown; the email
+never is). Each comment goes to an AI check first (`web/moderate.py`, Gemini 3.8 Flash
+on Vertex AI's global endpoint). "ok" posts at once; spam, abuse or someone's private
+details are held for Mike on the dashboard, where he approves or removes; if the AI
+can't be reached the comment is held, never posted unchecked. Ten comments per person
+per day. Archer's `site_pitches` job pushes every new comment to Mike's phone, and says
+when one was held.
+
 ## Analytics (ours, no cookies)
 
-Every page view is recorded by the server; the page's script adds scroll depth (25, 50,
-75, 100%), X-ray opens, buttons pressed, links clicked out, and the first keystroke in
-the idea form. Rows go to BigQuery table `site_analytics.events`. Bots, the keep-warm
+Every page view is recorded by the server, along with votes, comments and sign-ins; the
+page's script adds scroll depth (25, 50, 75, 100%), X-ray opens, buttons pressed, links
+clicked out, and the first keystroke in the idea form. Rows go to BigQuery table `site_analytics.events`. Bots, the keep-warm
 ping and Mike's private pages aren't counted.
 
 A visitor is a 16-character code made from the day's random salt (Firestore `salts`,
@@ -58,21 +78,25 @@ cached five minutes), the version and the last deploy.
 
 ## Mike's sign-in
 
-`/admin` uses Sign in with Google and lets in only `ADMIN_EMAILS` (set in
+Sign-in is Sign in with Google, for commenters and for Mike; `/admin` lets in only
+`ADMIN_EMAILS` (set in
 `deploy/deploy.sh`). It needs a Google sign-in client, made once in the Cloud console
 (no command line can make one): Google Auth Platform, client type "Web application",
 redirect addresses `https://mikeadamsnc.com/auth/callback`,
 `https://www.mikeadamsnc.com/auth/callback` and the preview's `/auth/callback`. Its id
 and secret go in Secret Manager as `mikeadamsnc-google-client-id` and
 `mikeadamsnc-google-client-secret`; the deploy script picks them up when they exist.
-The sign-in cookie is the only cookie the site sets.
+The sign-in cookie is the only cookie the site sets, and only for people who sign in.
+While the Google sign-in app is in "testing" mode only its listed test users can sign
+in; it must be switched to "In production" (Google Auth Platform, Audience) before
+the public can comment.
 
 ## Scheduled jobs
 
 | Job | When | What it does |
 |---|---|---|
 | `mikeadamsnc-keep-warm` | Every 10 minutes | Visits the site so it stays ready for visitors. |
-| Archer `site_pitches` | Every 5 minutes | Pushes each new pitch to Mike's phone, then marks it sent. |
+| Archer `site_pitches` | Every 5 minutes | Pushes each new pitch and comment to Mike's phone, then marks it sent. |
 
 ## Changing the site
 

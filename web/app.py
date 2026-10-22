@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, clock, content
+from . import analytics, auth, clock, content, moderate, ranking
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -28,7 +28,7 @@ templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 store = make_store()
 recorder = analytics.make_recorder()
 
-SKIP = ("/static", "/brand", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/robots.txt")
+SKIP = ("/static", "/brand", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt")
 PITCH_KINDS = ["App", "Website", "Something else", "Not sure"]
 PITCH_PURPOSES = ["Personal use", "Business", "Something to sell", "Not sure"]
 PITCH_PAY = ["I'd pay you to build it", "Split what it earns", "Free, I just want it to exist", "Not sure"]
@@ -76,26 +76,91 @@ def page(request: Request, name: str, status: int = 200, **kw) -> HTMLResponse:
         "revision": os.environ.get("K_REVISION", "local"),
         "deployed": os.environ.get("BUILD_TIME", "not deployed"),
     }
-    return templates.TemplateResponse(request, name, {"site": content.site(), "xray": facts, "year": clock.now().year, **kw},
+    me = auth.person(request.cookies.get(auth.COOKIE))
+    return templates.TemplateResponse(request, name, {"site": content.site(), "xray": facts, "year": clock.now().year,
+                                                      "signed_in": me, "signin_on": auth.enabled(), **kw},
                                       status_code=status)
+
+
+def safe_tallies() -> dict:
+    try:
+        return store.tallies()
+    except Exception as e:
+        logging.warning("tallies unavailable: %s", e)
+        return {}
 
 
 @app.get("/")
 def home(request: Request):
-    return page(request, "home.html", projects=content.projects(), experiments=content.experiments())
+    tallies = safe_tallies()
+    return page(request, "home.html", projects=content.projects(), tallies=tallies,
+                experiments=ranking.order(content.experiments(), tallies, "hot"))
 
 
 @app.get("/lab")
-def lab(request: Request):
-    return page(request, "lab.html", experiments=content.experiments())
+def lab(request: Request, sort: str = "hot"):
+    sort = sort if sort in {"hot", "new", "top"} else "hot"
+    tallies = safe_tallies()
+    vid = visitor(request)
+    exps = ranking.order(content.experiments(), tallies, sort)
+    mine = {e["slug"]: store.my_vote(e["slug"], vid) for e in exps}
+    return page(request, "lab.html", experiments=exps, tallies=tallies, mine=mine, sort=sort)
 
 
 @app.get("/lab/{slug}")
-def experiment(request: Request, slug: str):
+def experiment(request: Request, slug: str, held: int = 0):
     e = content.find(content.experiments(), slug)
     if not e:
         raise HTTPException(404)
-    return page(request, "experiment.html", e=e, experiments=content.experiments())
+    me = auth.person(request.cookies.get(auth.COOKIE))
+    comments = store.list_comments(slug)
+    mine_held = [c for c in store.list_comments(slug, ("held",)) if me and c.get("sub") == me.get("sub")]
+    return page(request, "experiment.html", e=e, experiments=content.experiments(), tally=store.tally(slug),
+                my_vote=store.my_vote(slug, visitor(request)), comments=comments, mine_held=mine_held,
+                held=held, error=request.query_params.get("error"))
+
+
+@app.post("/vote/{slug}")
+async def vote(request: Request, slug: str):
+    if not content.find(content.experiments(), slug):
+        raise HTTPException(404)
+    try:
+        value = int((await request.json()).get("value", 0))
+    except Exception:
+        raise HTTPException(400)
+    if value not in (-1, 0, 1):
+        raise HTTPException(400)
+    device, browser, is_bot = analytics.describe(request.headers.get("user-agent", ""))
+    if is_bot:
+        raise HTTPException(403)
+    vid = visitor(request)
+    if store.bump(f"votes-{vid}-{clock.today()}") > 100:
+        raise HTTPException(429)
+    tally = store.vote(slug, vid, value)
+    recorder.record(analytics.row("vote", path=f"/lab/{slug}", visitor=vid, device=device, browser=browser,
+                                  detail=slug, value=float(value)))
+    return {**tally, "mine": value}
+
+
+@app.post("/lab/{slug}/comments")
+def comment(request: Request, slug: str, text: str = Form("")):
+    e = content.find(content.experiments(), slug)
+    if not e:
+        raise HTTPException(404)
+    me = auth.person(request.cookies.get(auth.COOKIE))
+    if not me:
+        return RedirectResponse(f"/login?next=/lab/{slug}%23comments", status_code=303)
+    text = text.strip()
+    if not 2 <= len(text) <= 2000:
+        return RedirectResponse(f"/lab/{slug}?error=length#comments", status_code=303)
+    if store.bump(f"comments-{me['sub']}-{clock.today()}") > 10:
+        return RedirectResponse(f"/lab/{slug}?error=limit#comments", status_code=303)
+    verdict, reason = moderate.check(e["title"], text)
+    status = "visible" if verdict == "ok" else "held"
+    store.add_comment({"slug": slug, "text": text, "name": me["name"], "email": me["email"], "sub": me["sub"],
+                       "created_at": clock.stamp(), "status": status, "reason": reason})
+    recorder.record(analytics.row("comment", path=f"/lab/{slug}", visitor=visitor(request), detail=status))
+    return RedirectResponse(f"/lab/{slug}{'?held=1' if status == 'held' else ''}#comments", status_code=303)
 
 
 @app.get("/projects/{slug}")
@@ -204,38 +269,71 @@ def admin(request: Request, days: int = 7):
         return RedirectResponse("/admin/login", status_code=303)
     days = 30 if days == 30 else 7
     from . import dashboard
+    tallies = safe_tallies()
+    votes = sorted(({"slug": k, **v} for k, v in tallies.items()), key=lambda r: r["up"] - r["down"], reverse=True)
     return page(request, "admin.html", me=me, days=days, stats=dashboard.stats(recorder, days),
-                pitches=store.list_pitches())
+                pitches=store.list_pitches(), held=store.list_comments(None, ("held",)),
+                recent=list(reversed(store.list_comments(None, ("visible",))))[:20], votes=votes)
 
 
-@app.get("/admin/login")
-def admin_login(request: Request):
+@app.post("/admin/comments/{cid}")
+def comment_status(request: Request, cid: str, status: str = Form(...)):
+    if not require_mike(request):
+        raise HTTPException(403)
+    if status not in {"visible", "removed"}:
+        raise HTTPException(400)
+    store.set_comment(cid, status)
+    return RedirectResponse("/admin#comments", status_code=303)
+
+
+def safe_next(nxt: str) -> str:
+    return nxt if nxt.startswith("/") and not nxt.startswith("//") else "/"
+
+
+@app.get("/login")
+def login(request: Request, next: str = "/"):
     if not auth.enabled():
-        return RedirectResponse("/admin", status_code=303)
+        return RedirectResponse(safe_next(next), status_code=303)
     url, state = auth.login_url(callback_url(request))
     resp = RedirectResponse(url, status_code=303)
     resp.set_cookie("oauth_state", state, max_age=600, httponly=True, secure=True, samesite="lax")
+    resp.set_cookie("oauth_next", safe_next(next), max_age=600, httponly=True, secure=True, samesite="lax")
     return resp
+
+
+@app.get("/admin/login")
+def admin_login():
+    return RedirectResponse("/login?next=/admin", status_code=303)
 
 
 @app.get("/auth/callback")
 def auth_callback(request: Request, code: str = "", state: str = ""):
     if not auth.enabled() or not code or state != request.cookies.get("oauth_state"):
         raise HTTPException(400)
-    email = auth.email_from_code(code, callback_url(request))
-    if not email or email not in auth.admins():
+    who_ = auth.person_from_code(code, callback_url(request))
+    nxt = safe_next(request.cookies.get("oauth_next", "/"))
+    if not who_:
+        raise HTTPException(400)
+    if nxt.startswith("/admin") and who_["email"] not in auth.admins():
         return page(request, "admin_off.html", status=403, denied=True)
-    resp = RedirectResponse("/admin", status_code=303)
-    resp.set_cookie(auth.COOKIE, auth.make_cookie(email), max_age=auth.MAX_AGE, httponly=True, secure=True, samesite="lax")
+    resp = RedirectResponse(nxt, status_code=303)
+    resp.set_cookie(auth.COOKIE, auth.make_cookie(who_), max_age=auth.MAX_AGE, httponly=True, secure=True, samesite="lax")
     resp.delete_cookie("oauth_state")
+    resp.delete_cookie("oauth_next")
+    recorder.record(analytics.row("sign_in", path=nxt, visitor=visitor(request)))
+    return resp
+
+
+@app.get("/logout")
+def logout(next: str = "/"):
+    resp = RedirectResponse(safe_next(next), status_code=303)
+    resp.delete_cookie(auth.COOKIE)
     return resp
 
 
 @app.get("/admin/logout")
 def admin_logout():
-    resp = RedirectResponse("/", status_code=303)
-    resp.delete_cookie(auth.COOKIE)
-    return resp
+    return logout()
 
 
 @app.post("/admin/pitches/{pid}")
@@ -267,6 +365,20 @@ def pitches_unsent(request: Request):
 def pitch_told(request: Request, pid: str):
     archer_only(request)
     store.mark_told(pid)
+    return {"ok": True}
+
+
+@app.get("/api/comments/unsent")
+def comments_unsent(request: Request):
+    archer_only(request)
+    out = [c for c in store.list_comments(None, ("visible", "held")) if not c.get("archer_told_at")]
+    return {"comments": [{k: c.get(k) for k in ("id", "slug", "name", "text", "status", "reason", "created_at")} for c in out]}
+
+
+@app.post("/api/comments/{cid}/told")
+def comment_told(request: Request, cid: str):
+    archer_only(request)
+    store.mark_comment_told(cid)
     return {"ok": True}
 
 

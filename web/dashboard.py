@@ -12,6 +12,7 @@ def stats(recorder, days: int) -> dict:
         "summary": one(f"""SELECT COUNTIF(kind='page_view') views,
               COUNT(DISTINCT IF(kind='page_view', CONCAT(SUBSTR(ts_eastern,1,10), visitor), NULL)) visitor_days,
               COUNTIF(kind='xray_open') xray, COUNTIF(kind='pitch_submit') pitches,
+              COUNTIF(kind='vote') votes, COUNTIF(kind='comment') comments, COUNTIF(kind='sign_in') sign_ins,
               ROUND(AVG(IF(kind='page_view', server_ms, NULL)),1) avg_ms
             FROM `{TABLE}` WHERE ts >= {since}"""),
         "daily": q(f"""SELECT SUBSTR(ts_eastern,1,10) day, COUNTIF(kind='page_view') views,

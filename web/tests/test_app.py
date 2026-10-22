@@ -158,3 +158,107 @@ def test_archer_gets_each_pitch_once(client, monkeypatch):
     assert client.post(f"/api/pitches/{unsent[0]['id']}/told", headers=h).status_code == 200
     assert client.get("/api/pitches/unsent", headers=h).json()["pitches"] == []
     assert views() == [v for v in views() if not v["path"].startswith("/api")]
+
+
+# ---------- step 2: votes, ranking, comments ----------
+from web import ranking  # noqa: E402
+
+PERSON = {"email": "sam@example.com", "name": "Sam", "sub": "g-123"}
+
+
+def test_vote_up_then_take_it_back(client):
+    assert client.post("/vote/grill-autopilot", json={"value": 1}).json() == {"up": 1, "down": 0, "mine": 1}
+    assert client.post("/vote/grill-autopilot", json={"value": 0}).json() == {"up": 0, "down": 0, "mine": 0}
+    assert client.post("/vote/grill-autopilot", json={"value": -1}).json()["down"] == 1
+
+
+def test_one_vote_per_visitor_not_one_per_click(client):
+    for _ in range(3):
+        client.post("/vote/grill-autopilot", json={"value": 1})
+    assert site.store.tally("grill-autopilot") == {"up": 1, "down": 0}
+
+
+def test_bad_votes_are_refused(client):
+    assert client.post("/vote/nope", json={"value": 1}).status_code == 404
+    assert client.post("/vote/grill-autopilot", json={"value": 5}).status_code == 400
+    assert client.post("/vote/grill-autopilot", json={"value": 1}, headers={"user-agent": "Googlebot"}).status_code == 403
+
+
+def test_votes_are_counted_in_analytics(client):
+    client.post("/vote/trail-cam-ai", json={"value": 1})
+    assert [r for r in site.recorder.rows if r["kind"] == "vote"][0]["detail"] == "trail-cam-ai"
+
+
+def test_hot_favors_votes_and_newness():
+    assert ranking.hot(10, 0, "2026-10-22") > ranking.hot(1, 0, "2026-10-22")
+    assert ranking.hot(1, 0, "2026-11-22") > ranking.hot(10, 0, "2026-10-22")   # a month newer beats 10 votes
+    assert ranking.hot(0, 5, "2026-10-22") < ranking.hot(0, 0, "2026-10-22")
+
+
+def test_lab_sorts_by_votes(client):
+    client.post("/vote/local-ai-model", json={"value": 1})
+    for sort in ["hot", "top"]:
+        r = client.get(f"/lab?sort={sort}").text
+        assert r.index("The flop: a local AI model.") < r.index("My grill runs the whole cook.")
+    assert client.get("/lab?sort=weird").status_code == 200
+
+
+def test_comments_need_sign_in(client):
+    r = client.post("/lab/grill-autopilot/comments", data={"text": "Nice!"}, follow_redirects=False)
+    assert r.headers["location"].startswith("/login?next=/lab/grill-autopilot")
+    assert site.store.list_comments("grill-autopilot") == []
+
+
+def test_a_signed_in_comment_posts_and_shows(client):
+    client.cookies.set(auth.COOKIE, auth.make_cookie(PERSON))
+    r = client.post("/lab/grill-autopilot/comments", data={"text": "What cut do you trust it with?"}, follow_redirects=False)
+    assert r.headers["location"] == "/lab/grill-autopilot#comments"
+    page = client.get("/lab/grill-autopilot").text
+    assert "What cut do you trust it with?" in page and "Sam" in page
+    assert "sam@example.com" not in page          # email never shown
+
+
+def test_spammy_comment_is_held_and_only_its_author_sees_it(client):
+    client.cookies.set(auth.COOKIE, auth.make_cookie(PERSON))
+    r = client.post("/lab/grill-autopilot/comments", data={"text": "buy now http://a.com http://b.com"}, follow_redirects=False)
+    assert "held=1" in r.headers["location"]
+    assert "waiting for a check" in client.get("/lab/grill-autopilot").text
+    client.cookies.clear()
+    assert "buy now" not in client.get("/lab/grill-autopilot").text
+
+
+def test_comment_length_and_daily_limit(client):
+    client.cookies.set(auth.COOKIE, auth.make_cookie(PERSON))
+    assert "error=length" in client.post("/lab/grill-autopilot/comments", data={"text": "x"}, follow_redirects=False).headers["location"]
+    for i in range(10):
+        client.post("/lab/grill-autopilot/comments", data={"text": f"comment {i}"})
+    assert "error=limit" in client.post("/lab/grill-autopilot/comments", data={"text": "one more"}, follow_redirects=False).headers["location"]
+
+
+def test_mike_can_approve_and_remove(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "mike@example.com")
+    cid = site.store.add_comment({"slug": "grill-autopilot", "text": "held one", "name": "X", "email": "x@x.com",
+                                  "sub": "s", "created_at": "2026-10-22T20:00:00-04:00", "status": "held", "reason": "r"})
+    assert client.post(f"/admin/comments/{cid}", data={"status": "visible"}).status_code == 403
+    client.cookies.set(auth.COOKIE, auth.make_cookie("mike@example.com"))
+    client.post(f"/admin/comments/{cid}", data={"status": "visible"})
+    assert "held one" in client.get("/lab/grill-autopilot").text
+    client.post(f"/admin/comments/{cid}", data={"status": "removed"})
+    assert "held one" not in client.get("/lab/grill-autopilot").text
+
+
+def test_archer_hears_about_each_comment_once(client, monkeypatch):
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    h = {"authorization": "Bearer t0ken"}
+    client.cookies.set(auth.COOKIE, auth.make_cookie(PERSON))
+    client.post("/lab/grill-autopilot/comments", data={"text": "Love this one."})
+    got = client.get("/api/comments/unsent", headers=h).json()["comments"]
+    assert len(got) == 1 and "email" not in got[0]
+    client.post(f"/api/comments/{got[0]['id']}/told", headers=h)
+    assert client.get("/api/comments/unsent", headers=h).json()["comments"] == []
+
+
+def test_login_only_returns_to_this_site(client):
+    from web.app import safe_next
+    assert safe_next("/lab/x#comments") == "/lab/x#comments"
+    assert safe_next("https://evil.com") == "/" and safe_next("//evil.com") == "/"

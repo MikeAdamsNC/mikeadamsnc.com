@@ -1,5 +1,6 @@
 # One-off tests and showcases, flops included. Newest first.
 # verdict: worked | meh | flop     status: running | done | retired
+# added: the date it went on the site (the Lab's "Hot" ranking ages from it)
 - slug: rain-or-bugs
   title: "My radar can tell rain from bugs."
   hook: "Raw NOAA radar, decoded at home, graded against my own rain gauge."
@@ -13,6 +14,7 @@
   verdict: worked
   verdict_line: "Every forecast gets graded against my backyard rain gauge, so I know when it's right."
   status: running
+  added: 2026-10-22
 - slug: grill-autopilot
   title: "My grill runs the whole cook."
   hook: "AI writes the plan; I just say when the meat's on."
@@ -24,6 +26,7 @@
   verdict: worked
   verdict_line: "Dinner shows up on time without me babysitting the grill."
   status: running
+  added: 2026-10-22
 - slug: trail-cam-ai
   title: "An AI reads every trail cam photo."
   hook: "Its favorite mistake: calling a deer a car."
@@ -36,6 +39,7 @@
   verdict: worked
   verdict_line: "It still calls a deer a car now and then. It's getting better."
   status: running
+  added: 2026-10-22
 - slug: school-email
   title: "School emails, read for me."
   hook: "Only what a parent acts on reaches the kitchen screen."
@@ -48,6 +52,7 @@
   verdict: worked
   verdict_line: "Nothing to remember, nothing to check off."
   status: running
+  added: 2026-10-22
 - slug: self-fixing-code
   title: "Archer fixes its own bugs."
   hook: "A second AI reviews every change before it ships."
@@ -60,6 +65,7 @@
   verdict: worked
   verdict_line: "It worked, but I kept it paused most of the time, and in the end we killed the pipeline."
   status: retired
+  added: 2026-10-22
 - slug: local-ai-model
   title: "The flop: a local AI model."
   hook: "Ran it to save money. Killed it a month later."
@@ -71,3 +77,4 @@
   verdict: flop
   verdict_line: "Not worth the gigabytes it took up. Penny models and plain code did the job better."
   status: retired
+  added: 2026-10-22

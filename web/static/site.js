@@ -54,6 +54,31 @@
     if (a.host && a.host !== location.host) send("outbound", { detail: a.host });
     else if (a.dataset.cta) send("cta", { detail: a.dataset.cta });
   });
+  // Thumbs: tap once to vote, tap the same one again to take it back.
+  document.querySelectorAll(".vote").forEach((box) => {
+    const slug = box.dataset.slug;
+    const saved = localStorage.getItem("vote:" + slug);
+    if (saved && box.dataset.mine === "0") paint(box, +saved);
+    box.addEventListener("click", async (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const want = +b.dataset.v === +box.dataset.mine ? 0 : +b.dataset.v;
+      try {
+        const r = await fetch("/vote/" + slug, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value: want }) });
+        if (!r.ok) return;
+        const t = await r.json();
+        box.querySelector(".n-up").textContent = t.up;
+        box.querySelector(".n-down").textContent = t.down;
+        paint(box, t.mine);
+        localStorage.setItem("vote:" + slug, t.mine);
+      } catch (_) {}
+    });
+  });
+  function paint(box, v) {
+    box.dataset.mine = v;
+    box.querySelectorAll("button").forEach((b) => { const on = +b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+  }
+
   const form = document.querySelector("form.form");
   form?.addEventListener("input", () => send("pitch_start"), { once: true });
 })();

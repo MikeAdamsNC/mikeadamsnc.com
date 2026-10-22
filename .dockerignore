@@ -1,0 +1,9 @@
+.git
+**/__pycache__
+**/.pytest_cache
+.venv
+brand-round*
+brand/fonts
+brand/proof.png
+docs
+web/tests

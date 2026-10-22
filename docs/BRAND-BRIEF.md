@@ -5,10 +5,9 @@ Mike should confirm or fix.
 
 ## Who
 
-Mike Adams, North Carolina. A tinkerer who plays with new technology the moment it
-shows up: Claude Code, Grok, iOS apps, APIs, home gadgets, whatever is next. He builds
-real things with it because he wants them to exist, then keeps going because he enjoys
-it. Nerdy, and proud of it.
+Mike Adams, North Carolina. He experiments with new technology as it shows up: Claude
+Code, Grok, iOS apps, APIs, whatever is next. He tries things, keeps what works, and
+turns the best experiments into real things he and others actually use.
 
 ## What the brand is for
 
@@ -20,8 +19,9 @@ never appears.
 
 - Builder, not salesman. Shows the thing, skips the hype.
 - Plain words. Direct. A little dry humor.
-- Curious and nerdy: first in line to try a new tool, model or API, and to see what it
-  can really do.
+- Experimental: tries new tools early, tests ideas fast, shares what worked and what
+  didn't.
+- Homegrown: built by one person, for real life, not by a company.
 - Innovative but practical: new tech pointed at real, everyday problems.
 - Generous with ideas, honest about time: "I read everything; I pick a few."
 
@@ -32,8 +32,9 @@ online. Nobody should need to be technical to understand the site.
 
 ## Feel
 
-Warm, confident, a little nerdy. A tinkerer's workbench where the tools are AI and
-code: hands-on and playful, not a polished startup. Works in light and dark.
+Welcoming and techy. Clean and modern, clearly built by someone who knows the
+technology, but friendly enough that anyone feels invited in to look around or pitch an
+idea. Confident, not polished-corporate. Works in light and dark.
 
 ## Avoid
 

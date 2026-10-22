@@ -24,13 +24,23 @@ zero on Cloud Run at about $0; his spend today is StartFishing's always-on API a
 Cloud SQL database plus the Chesnick WordPress VM. $10-15/month more for always on was
 not worth it for a personal site.
 
-## Still being shaped
+## What the site is (2026-10-22, draft)
 
-What the site actually is. First idea, not settled:
+mikeadamsnc.com is Mike's personal brand, with his personality baked in. For anyone who
+lands there. In order of weight:
 
-- A form anyone can use to send Mike an idea to build (what it is; app, website or other;
-  personal, business or to sell; who pays whom; design and feature ideas; marketing;
-  plus name and email so he can reply).
-- A private queue only Mike can open (Sign in with Google) to sort those ideas.
-- A showcase of things he has built (StartFishing, the fridge display, Archer).
-- A count of what he is building right now.
+1. **Here's what I make.** The things he has built lead the page.
+2. **This is Mike.** Who he is outside of work. His day job stays completely off the site.
+3. **Got an idea?** A form anyone can use to pitch something for him to build. No
+   commitment: he reads everything and picks the occasional one he can get behind.
+
+A great year: a couple of fun projects he believes in and helps bring to life. Making
+money, building cool things and helping people all count.
+
+Behind the form: a private queue only Mike can open (Sign in with Google), and a public
+count of what he is building right now.
+
+## Next
+
+Brand first (logo, colors, type, voice), made in Claude Design from `docs/BRAND-BRIEF.md`.
+Then the site.

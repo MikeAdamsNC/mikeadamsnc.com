@@ -11,7 +11,7 @@
     <div class="cl">
       {% if lab %}
       {% set g = lab.grill %}
-      <div class="k">grill <span class="dim">(2 hours ago)</span></div>
+      <div class="k">grill</div>
       {% if g.on %}<div class="t">{{ g.cut|lower }} cooking <em class="v-worked">● {{ g.grill_f }}°F{% if g.probe_f %} · meat {{ g.probe_f }}°F{% endif %}</em></div>
       {% else %}<div class="t">off <em class="dim">quiet</em></div>{% endif %}
       {% set calls = {'rain': 'rain around Raleigh', 'bugs': 'bugs in the air', 'birds': 'birds migrating', 'biology': 'birds or bugs in the air', 'clear': 'clear skies', 'unknown': 'radar resting'} %}
@@ -49,6 +49,15 @@
     {% endfor %}
   </div>
 </section>
+
+{% if reading %}
+<section class="wrap sec">
+  <div class="sec-head"><div class="mono label">What I'm reading</div><a href="/reading" class="more">More →</a></div>
+  <div class="reads" data-x="READING|Publishers' own RSS · headline, source and link only · one line of our own (Gemini picks and writes it) · content/reading.yaml">
+    {% for r in reading %}{% include "_read.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <section class="wrap sec pitch">
   <div>

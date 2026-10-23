@@ -16,7 +16,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, bot, clock, content, moderate, ranking, talk, versions
+from . import analytics, auth, bot, clock, content, moderate, ranking, reading, talk, versions
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -84,6 +84,19 @@ def page(request: Request, name: str, status: int = 200, **kw) -> HTMLResponse:
                                       status_code=status)
 
 
+def safe_reading(limit: int) -> list[dict]:
+    try:
+        return store.list_reading(limit)
+    except Exception as e:
+        logging.warning("reading unavailable: %s", e)
+        return []
+
+
+@app.get("/reading")
+def reading_page(request: Request):
+    return page(request, "reading.html", items=safe_reading(40))
+
+
 def safe_tallies() -> dict:
     try:
         return store.tallies()
@@ -98,7 +111,7 @@ def home(request: Request, v: str = "classic"):
         return page(request, f"v_{v}.html", version=v, versions=versions.all(), projects=content.projects(),
                     experiments=content.experiments())
     tallies = safe_tallies()
-    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic", lab=live_lab(),
+    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic", lab=live_lab(), reading=safe_reading(5),
                 experiments=ranking.order(content.experiments(), tallies, "hot"))
 
 
@@ -111,7 +124,7 @@ def versions_page(request: Request):
 def site_json():
     """Everything public on the site, for the versions that draw it themselves."""
     tallies = safe_tallies()
-    return {"site": {k: v for k, v in content.site().items()}, "projects": content.projects(), "lab": live_lab(),
+    return {"site": {k: v for k, v in content.site().items()}, "projects": content.projects(), "lab": live_lab(), "reading": safe_reading(10),
             "experiments": [{**e, "added": str(e.get("added", "")), **tallies.get(e["slug"], {"up": 0, "down": 0})}
                             for e in ranking.order(content.experiments(), tallies, "hot")],
             "versions": [{**v, "added": str(v.get("added", ""))} for v in versions.all()]}
@@ -355,8 +368,9 @@ async def event(request: Request):
 
 @app.get("/health")
 def health():
-    """The scheduler pings this every 10 minutes so the site stays warm.
-    (Not /healthz: Cloud Run reserves paths ending in z.)"""
+    """The scheduler pings this every 10 minutes so the site stays warm, and the reading
+    shelf refreshes off it about hourly. (Not /healthz: Cloud Run reserves paths ending in z.)"""
+    reading.refresh_if_due(store)
     return PlainTextResponse("ok")
 
 

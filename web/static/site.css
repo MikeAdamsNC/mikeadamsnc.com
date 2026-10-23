@@ -223,3 +223,9 @@ a.chatbox{display:block}a.chatbox:hover{box-shadow:0 20px 40px -28px rgba(11,22,
 .labpic{display:block;margin-top:14px;border-radius:12px;overflow:hidden;position:relative}
 .labpic img{width:100%;aspect-ratio:16/10;object-fit:cover;filter:saturate(.9)}
 .labpic span{position:absolute;left:10px;bottom:8px;font-size:11px;background:rgba(11,22,32,.75);color:#DCE7EA;padding:3px 8px;border-radius:6px}
+
+/* what I'm reading */
+.reads{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+.reads.list{grid-template-columns:1fr;max-width:860px}
+.read{display:flex;flex-direction:column;gap:6px;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.read:hover{border-color:var(--water)}.read b{font-size:17px;line-height:1.35}.read .why{color:var(--muted);font-size:15px}

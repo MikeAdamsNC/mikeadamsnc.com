@@ -402,7 +402,7 @@ def test_lab_shows_on_the_home_page(client, monkeypatch):
     h = {"authorization": "Bearer t0ken"}
     assert client.post("/api/lab", headers=h, json=lab_body(photo={"jpeg_b64": base64.b64encode(JPEG).decode(), "species": "white-tailed deer", "count": 1})).status_code == 200
     page = client.get("/").text
-    assert "pork butt cooking" in page and "bugs in the air" in page and "white-tailed deer" in page and "● live" in page
+    assert "2 hours ago" not in page and "pork butt cooking" in page and "bugs in the air" in page and "white-tailed deer" in page and "● live" in page
     assert client.get("/lab-photo.jpg").content == JPEG
 
 
@@ -427,3 +427,50 @@ def test_a_non_jpeg_photo_is_refused(client, monkeypatch):
     monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
     r = client.post("/api/lab", headers={"authorization": "Bearer t0ken"}, json=lab_body(photo={"jpeg_b64": base64.b64encode(b"<svg>").decode()}))
     assert r.status_code == 400
+
+
+# ---------- what I'm reading ----------
+from web import reading  # noqa: E402
+
+RSS = b"""<?xml version="1.0"?><rss><channel>
+<item><title>A new open model you can run on a laptop</title><link>https://ex.com/a?utm=x</link>
+<pubDate>%s</pubDate><description>&lt;p&gt;Long article text that must never be shown&lt;/p&gt;</description></item>
+<item><title>Old story</title><link>https://ex.com/old</link><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate></item>
+</channel></rss>"""
+ATOM = b"""<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Atom post</title>
+<link rel="alternate" href="https://ex.org/p"/><published>%s</published><summary>s</summary></entry></feed>"""
+
+
+def fake_fetch(url):
+    from email.utils import format_datetime
+    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    return (ATOM % now.isoformat().encode()) if "simonwillison" in url else (RSS % format_datetime(now).encode())
+
+
+def test_reading_picks_new_stories_once(client):
+    out = reading.refresh(site.store, fetch=fake_fetch)
+    assert out.startswith("4 picked") or "picked" in out
+    items = site.store.list_reading()
+    assert {"title", "link", "source", "line"} <= set(items[0])
+    assert all("Long article text" not in str(i) for i in items)          # summaries are never kept
+    assert all(i["title"] != "Old story" for i in items)
+    assert reading.refresh(site.store, fetch=fake_fetch) == "nothing new"  # nothing offered twice
+
+
+def test_reading_shows_on_home_and_its_page(client):
+    reading.refresh(site.store, fetch=fake_fetch)
+    assert "What I&#39;m reading" in client.get("/").text or "What I'm reading" in client.get("/").text
+    r = client.get("/reading").text
+    assert "A new open model you can run on a laptop" in r and 'rel="noopener"' in r
+
+
+def test_atom_and_rss_both_parse():
+    from email.utils import format_datetime
+    now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    assert reading.parse(ATOM % now.isoformat().encode(), "S")[0]["link"] == "https://ex.org/p"
+    assert reading.parse(RSS % format_datetime(now).encode(), "R")[0]["title"].startswith("A new open model")
+
+
+def test_a_bad_pick_index_is_ignored(client):
+    out = reading.refresh(site.store, fetch=fake_fetch, pick=lambda c, n: [{"i": 99, "line": "x"}, {"i": "0", "line": "y"}])
+    assert out.startswith("0 picked")

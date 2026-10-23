@@ -17,6 +17,9 @@ class MemoryStore:
         self.counts: dict[str, int] = {}
         self.votes: dict[str, int] = {}
         self.lab: dict | None = None
+        self.reading: dict[str, dict] = {}
+        self.reading_skipped: set[str] = set()
+        self.reading_at: float = 0
         self.lab_photo: bytes | None = None
         self.comments: dict[str, dict] = {}
 
@@ -36,6 +39,28 @@ class MemoryStore:
     def mark_told(self, pid: str) -> None:
         if pid in self.pitches:
             self.pitches[pid]["archer_told_at"] = clock.stamp()
+
+    # what I'm reading
+    def reading_keys(self) -> set[str]:
+        return set(self.reading) | self.reading_skipped
+
+    def add_reading(self, k: str, item: dict) -> None:
+        self.reading[k] = item
+
+    def skip_reading(self, k: str) -> None:
+        self.reading_skipped.add(k)
+
+    def list_reading(self, limit: int = 30) -> list[dict]:
+        return sorted(self.reading.values(), key=lambda r: r["picked_at"], reverse=True)[:limit]
+
+    def prune_reading(self, days: int) -> None:
+        pass
+
+    def reading_refreshed(self) -> float:
+        return self.reading_at
+
+    def set_reading_refreshed(self, t: float) -> None:
+        self.reading_at = t
 
     def put_lab(self, summary: dict, photo: bytes | None) -> None:
         self.lab = summary
@@ -111,6 +136,41 @@ class FirestoreStore:
 
     def mark_told(self, pid: str) -> None:
         self.db.collection("pitches").document(pid).update({"archer_told_at": clock.stamp()})
+
+    def reading_keys(self) -> set[str]:
+        return {d.id for d in self.db.collection("reading").select([]).stream()} | \
+               {d.id for d in self.db.collection("reading_skipped").select([]).stream()}
+
+    def add_reading(self, k: str, item: dict) -> None:
+        self.db.collection("reading").document(k).set(item)
+        self._reading = None
+
+    def skip_reading(self, k: str) -> None:
+        self.db.collection("reading_skipped").document(k).set({"at": clock.stamp()})
+
+    def list_reading(self, limit: int = 30) -> list[dict]:
+        import time
+        if getattr(self, "_reading", None) and time.time() - self._reading[0] < 300:
+            return self._reading[1][:limit]
+        q = self.db.collection("reading").order_by("picked_at", direction="DESCENDING").limit(60)
+        rows = [d.to_dict() for d in q.stream()]
+        self._reading = (time.time(), rows)
+        return rows[:limit]
+
+    def prune_reading(self, days: int) -> None:
+        from datetime import timedelta
+        cutoff = (clock.now() - timedelta(days=days)).isoformat(timespec="seconds")
+        for col in ("reading", "reading_skipped"):
+            field = "picked_at" if col == "reading" else "at"
+            for d in self.db.collection(col).where(field, "<", cutoff).stream():
+                d.reference.delete()
+
+    def reading_refreshed(self) -> float:
+        snap = self.db.collection("state").document("reading").get()
+        return snap.get("at") if snap.exists else 0
+
+    def set_reading_refreshed(self, t: float) -> None:
+        self.db.collection("state").document("reading").set({"at": t})
 
     def put_lab(self, summary: dict, photo: bytes | None) -> None:
         self.db.collection("lab").document("latest").set(summary)

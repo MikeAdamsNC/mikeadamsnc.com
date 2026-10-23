@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}What I'm reading · MikeAdamsNC{% endblock %}
+{% block description %}AI and tech stories worth a builder's time, picked a few at a time.{% endblock %}
+{% block main %}
+<section class="wrap page-head">
+  <div class="mono label">What I'm reading</div>
+  <h1>Worth a builder's time.</h1>
+  <p class="lede">A few AI and tech stories a day from the publishers themselves, each with one line on why it's worth reading. Links go to the original.</p>
+</section>
+<section class="wrap sec reads list" data-x="READING|Publishers' own RSS · refreshed about hourly · last 14 days">
+  {% for r in items %}{% include "_read.html" %}{% else %}<p class="fine">Nothing picked yet. Check back in an hour.</p>{% endfor %}
+</section>
+{% endblock %}

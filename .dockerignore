@@ -2,8 +2,7 @@
 **/__pycache__
 **/.pytest_cache
 .venv
-brand-round*
-brand/fonts
+*-round*
 brand/proof.png
 docs
 web/tests

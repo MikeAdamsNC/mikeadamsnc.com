@@ -61,5 +61,5 @@
   <noscript><p class="err">The chat needs JavaScript. <a href="/pitch/form">Use the form instead</a>.</p></noscript>
 </section>
 <script id="chipdata" type="application/json">{{ chips|tojson }}</script>
-<script src="/static/chat.js" defer></script>
+<script src="{{ asset('chat.js') }}" defer></script>
 {% endblock %}

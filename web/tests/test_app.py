@@ -568,3 +568,8 @@ def test_card_is_editable_only_when_asked(client):
     pitch = {"type": "pitch", "what": "An app that finds food trucks near me."}
     assert "contenteditable" not in client.post("/pitch/card", json={"pitch": pitch}).json()["html"]
     assert "contenteditable" in client.post("/pitch/card", json={"pitch": pitch, "editable": True}).json()["html"]
+
+
+def test_styles_and_scripts_carry_a_content_fingerprint(client):
+    r = client.get("/pitch").text
+    assert '/static/site.css?v=' in r and '/static/chat.js?v=' in r and 'href="/static/site.css"' not in r

@@ -5,6 +5,7 @@ private dashboard. Words come from content/*.yaml; pitches go to Firestore; ever
 view and interaction goes to our own analytics (web/analytics.py).
 """
 import functools
+import hashlib
 import hmac
 import json
 import logging
@@ -30,6 +31,17 @@ app.mount("/brand", StaticFiles(directory=ROOT / "brand"), name="brand")
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 templates.env.globals["icon_svg"] = card.icon_svg
+
+
+@functools.cache
+def asset(path: str) -> str:
+    """A static file's address with a fingerprint of its contents, so browsers fetch it again
+    whenever it changes instead of showing a stale copy (a new chat.js with an old site.css)."""
+    digest = hashlib.md5((ROOT / "web" / "static" / path).read_bytes()).hexdigest()[:10]
+    return f"/static/{path}?v={digest}"
+
+
+templates.env.globals["asset"] = asset
 store = make_store()
 recorder = analytics.make_recorder()
 

@@ -232,3 +232,45 @@ a.chatbox{display:block}a.chatbox:hover{box-shadow:0 20px 40px -28px rgba(11,22,
 .reads.list{grid-template-columns:1fr;max-width:860px}
 .read{display:flex;flex-direction:column;gap:6px;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
 .read:hover{border-color:var(--water)}.read b{font-size:17px;line-height:1.35}.read .why{color:var(--muted);font-size:15px}
+
+/* pitch card: an App Store style listing with the app's main screen (web/card.py draws the share image to match) */
+.cardbox,.idea{container-type:inline-size}
+.cardbox{margin-bottom:18px}.cardbox>.mono{margin-bottom:10px}
+.pcard{display:grid;grid-template-columns:1fr 300px;border-radius:22px;overflow:hidden;background:var(--foam);border:1px solid #D5E0E2;box-shadow:0 24px 50px -30px rgba(11,22,32,.45)}
+.pc-l{padding:36px 36px 28px;display:flex;flex-direction:column;min-width:0}
+.pc-hd{display:flex;gap:20px;align-items:center}
+.pc-ic{flex:none;width:96px;height:96px;border-radius:24px;background:linear-gradient(180deg,#0E8492,#0B5E68);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 24px -14px rgba(11,110,122,.7)}
+.pc-ic .ico{width:58px;height:58px;stroke:#fff}
+.pc-name{font:800 44px/1.05 Manrope;letter-spacing:-.02em;color:var(--ink);overflow-wrap:anywhere}
+.pc-kind{font:600 15px Manrope;color:var(--water);margin-top:6px}
+.pc-tag{font:600 21px/1.35 Manrope;color:var(--ink);margin-top:24px}
+.pc-feat{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.pc-feat li{display:flex;gap:11px;align-items:center;font:500 16px Manrope;color:#33434F}
+.pc-feat i{flex:none;width:20px;height:20px;border-radius:50%;background:var(--aqua);display:inline-flex;align-items:center;justify-content:center;font:800 11px Manrope;color:var(--ink);font-style:normal}
+.pc-by{margin-top:auto;padding-top:26px;font-size:12px;color:#5A6B76}.pc-by b{color:var(--ink)}
+.pcard [contenteditable]{border-radius:6px;outline:1.5px dashed transparent;outline-offset:3px;cursor:text}
+.pcard [contenteditable]:hover,.pcard [contenteditable]:focus{outline-color:var(--aqua)}
+.pc-r{background:var(--ink);display:flex;align-items:center;justify-content:center;padding:28px 0}
+.pc-phone{width:200px;height:400px;border-radius:34px;background:#fff;border:8px solid #1A2A37;padding:20px 13px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.ps-t{font:800 16px Manrope;color:var(--ink);padding:0 2px 2px}
+.ps-hero{flex:none;height:118px;border-radius:13px;position:relative;overflow:hidden}
+.ps-map{background:linear-gradient(28deg,transparent 47%,#E8F6F4 47% 53%,transparent 53%),linear-gradient(100deg,transparent 30%,#E8F6F4 30% 34%,transparent 34%),#CDEBE8}
+.ps-map i{position:absolute;left:58%;top:36%;width:14px;height:14px;border-radius:50%;background:var(--water);box-shadow:0 0 0 7px #A9D9D4}
+.ps-chart{background:#E6EFEF;display:flex;align-items:flex-end;gap:6px;padding:10px}.ps-chart i{flex:1;border-radius:3px;background:var(--aqua)}.ps-chart i:last-child{background:var(--water)}
+.ps-cal{background:#E6EFEF;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:9px}.ps-cal i{border-radius:4px;background:#fff}.ps-cal .warm{background:var(--aqua)}.ps-cal .hot{background:var(--water)}
+.ps-photo{background:var(--water);display:flex;align-items:center;justify-content:center}.ps-photo .ico{width:50px;height:50px;stroke:#BFE8E4}
+.ps-row{background:var(--foam);border-radius:10px;padding:7px 10px;display:flex;flex-direction:column;min-width:0}
+.ps-row b{font:700 11.5px Manrope;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-row span{font:500 10px Manrope;color:#5A6B76;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-btn{margin-top:auto;flex:none;background:var(--water);color:#fff;border-radius:10px;text-align:center;font:700 12px Manrope;padding:10px}
+@container (max-width:640px){
+  .pcard{grid-template-columns:1fr}
+  .pc-l{padding:24px 22px 22px}.pc-ic{width:72px;height:72px;border-radius:18px}.pc-ic .ico{width:42px;height:42px}
+  .pc-name{font-size:32px}.pc-tag{font-size:18px;margin-top:18px}.pc-feat li{font-size:15px}
+}
+.card-opts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:12px}.card-opts .btn{margin-left:auto}
+.card-opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.btn.small{padding:8px 14px;font-size:14px;border-radius:10px}
+.idea{padding-top:36px;padding-bottom:72px;max-width:1000px}
+.idea .sent{background:var(--white);border:1.5px solid var(--water);border-radius:14px;padding:14px 18px;margin-bottom:22px}
+.idea .share{margin-top:24px}.idea .fine{margin-top:16px}

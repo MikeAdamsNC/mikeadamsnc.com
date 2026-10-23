@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} · an idea pitched on MikeAdamsNC{% endblock %}
+{% block description %}{{ c.tagline }}{% endblock %}
+{% block og_image %}https://mikeadamsnc.com/idea/{{ cid }}.png{% endblock %}
+{% block head %}<meta name="robots" content="noindex"><meta name="twitter:card" content="summary_large_image">{% endblock %}
+{% block main %}
+<section class="wrap idea">
+  {% if sent %}<div class="sent"><b>Sent to Mike.</b> He reads every one. This card is yours: share it or save it.</div>{% endif %}
+  {% include "_card.html" %}
+  <div class="btns share" data-x="SHARE|Only people with this link can see the card · search engines are told to skip it">
+    <button class="btn b1" type="button" id="share" data-url="https://mikeadamsnc.com/idea/{{ cid }}" data-title="{{ c.name }}">Share</button>
+    <a class="btn b2" href="/idea/{{ cid }}.png" download="{{ c.name|lower|replace(' ', '-') }}.png" data-cta="card_download">Save the image</a>
+    {% if not sent %}<a class="btn b2" href="/pitch" data-cta="card_pitch_own">Pitch your own idea</a>{% endif %}
+  </div>
+  <p class="fine">An idea someone pitched on MikeAdamsNC.com, written up by an AI. It's a picture of an idea, not an app Mike has built or promised to build.</p>
+</section>
+<script>
+(() => {
+  const b = document.getElementById("share"), url = b.dataset.url;
+  b.addEventListener("click", async () => {
+    const say = (t) => { b.textContent = t; setTimeout(() => (b.textContent = "Share"), 2000); };
+    try {
+      if (navigator.share) await navigator.share({ title: b.dataset.title, url });
+      else { await navigator.clipboard.writeText(url); say("Link copied"); }
+      navigator.sendBeacon?.("/e", new Blob([JSON.stringify({ kind: "card_share", path: location.pathname })], { type: "application/json" }));
+    } catch (_) {}
+  });
+})();
+</script>
+{% endblock %}

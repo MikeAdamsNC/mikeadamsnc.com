@@ -22,6 +22,7 @@ class MemoryStore:
         self.reading_at: float = 0
         self.lab_photo: bytes | None = None
         self.comments: dict[str, dict] = {}
+        self.cards: dict[str, dict] = {}
 
     def add_pitch(self, pitch: dict) -> str:
         pid = uuid.uuid4().hex[:12]
@@ -30,6 +31,14 @@ class MemoryStore:
 
     def list_pitches(self, limit: int = 200) -> list[dict]:
         return sorted(self.pitches.values(), key=lambda p: p["created_at"], reverse=True)[:limit]
+
+    def add_card(self, card: dict) -> str:
+        cid = secrets.token_urlsafe(8)
+        self.cards[cid] = card
+        return cid
+
+    def get_card(self, cid: str) -> dict | None:
+        return self.cards.get(cid)
 
     def set_status(self, pid: str, status: str) -> None:
         if pid in self.pitches:
@@ -126,6 +135,17 @@ class FirestoreStore:
         ref = self.db.collection("pitches").document()
         ref.set(pitch)
         return ref.id
+
+    def add_card(self, card: dict) -> str:
+        cid = secrets.token_urlsafe(8)  # unguessable: a card is seen only by whoever has the link
+        self.db.collection("cards").document(cid).set(card)
+        return cid
+
+    def get_card(self, cid: str) -> dict | None:
+        if not cid or "/" in cid:
+            return None
+        snap = self.db.collection("cards").document(cid).get()
+        return snap.to_dict() if snap.exists else None
 
     def list_pitches(self, limit: int = 200) -> list[dict]:
         q = self.db.collection("pitches").order_by("created_at", direction="DESCENDING").limit(limit)

@@ -8,3 +8,4 @@ itsdangerous==2.*
 google-auth==2.*
 google-cloud-firestore==2.*
 google-cloud-bigquery==3.*
+pillow==11.*

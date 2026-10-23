@@ -1,0 +1,21 @@
+{# The pitch card: an App Store style listing with the app's main screen. editable = the visitor can fix the words. #}
+{% set ed = ' contenteditable="plaintext-only" spellcheck="true"' if editable else '' %}
+<div class="pcard" data-x="PITCH CARD|Words by Gemini 3.8 Flash from the pitch · icon and screen picked from fixed lists · drawn by our own code">
+  <div class="pc-l">
+    <div class="pc-hd"><div class="pc-ic">{{ icon_svg(c.icon)|safe }}</div>
+      <div><h2 class="pc-name" data-f="name"{{ ed|safe }}>{{ c.name }}</h2><div class="pc-kind">{{ label }}</div></div></div>
+    <p class="pc-tag" data-f="tagline"{{ ed|safe }}>{{ c.tagline }}</p>
+    <ul class="pc-feat">{% for f in c.features %}<li><i>✓</i><span data-f="feature"{{ ed|safe }}>{{ f }}</span></li>{% endfor %}</ul>
+    <div class="pc-by mono">pitched{% if by %} by <b>{{ by }}</b>{% endif %} on <b>MikeAdamsNC.com</b></div>
+  </div>
+  <div class="pc-r"><div class="pc-phone">
+    <div class="ps-t">{{ c.screen.title }}</div>
+    {% set h = c.screen.hero %}
+    {% if h == "map" %}<div class="ps-hero ps-map"><i></i></div>
+    {% elif h == "chart" %}<div class="ps-hero ps-chart">{% for n in [34, 28, 44, 52, 64, 70, 86] %}<i style="height:{{ n }}%"></i>{% endfor %}</div>
+    {% elif h == "calendar" %}<div class="ps-hero ps-cal">{% for n in range(28) %}<i class="{{ 'hot' if n == 9 else 'warm' if n in (16, 20) else '' }}"></i>{% endfor %}</div>
+    {% elif h == "photo" %}<div class="ps-hero ps-photo">{{ icon_svg(c.icon)|safe }}</div>{% endif %}
+    {% for r in c.screen.rows %}<div class="ps-row"><b>{{ r.title }}</b><span>{{ r.sub }}</span></div>{% endfor %}
+    {% if c.screen.button %}<div class="ps-btn">{{ c.screen.button }}</div>{% endif %}
+  </div></div>
+</div>

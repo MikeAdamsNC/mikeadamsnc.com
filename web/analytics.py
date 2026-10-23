@@ -16,7 +16,7 @@ from . import clock
 log = logging.getLogger("analytics")
 TABLE = "macmanager-home.site_analytics.events"
 BOTS = re.compile(r"bot|crawl|spider|slurp|preview|scheduler|monitor|curl|wget|python-|httpx|headless", re.I)
-EVENT_KINDS = {"scroll", "xray_open", "xray_close", "outbound", "pitch_start", "cta", "version_pick", "terminal_command"}
+EVENT_KINDS = {"scroll", "xray_open", "xray_close", "outbound", "pitch_start", "cta", "version_pick", "terminal_command", "card_share"}
 
 
 def visitor_id(salt: bytes, ip: str, ua: str) -> str:

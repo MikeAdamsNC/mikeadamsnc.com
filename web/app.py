@@ -4,7 +4,9 @@ Pages: home, the Lab (experiments), project pages, the idea form, privacy, and M
 private dashboard. Words come from content/*.yaml; pitches go to Firestore; every page
 view and interaction goes to our own analytics (web/analytics.py).
 """
+import functools
 import hmac
+import json
 import logging
 import os
 import pathlib
@@ -16,7 +18,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, bot, clock, content, moderate, ranking, reading, talk, versions
+from . import analytics, auth, bot, card, clock, content, moderate, ranking, reading, talk, versions
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -27,6 +29,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.mount("/brand", StaticFiles(directory=ROOT / "brand"), name="brand")
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
+templates.env.globals["icon_svg"] = card.icon_svg
 store = make_store()
 recorder = analytics.make_recorder()
 
@@ -299,10 +302,68 @@ async def chat_send(request: Request):
         return JSONResponse({"ok": False, "error": "That's a lot of ideas for one day. Send the rest tomorrow."}, status_code=429)
     device, _, _ = analytics.describe(request.headers.get("user-agent", ""))
     transcript = "\n".join(f"{'Visitor' if m['role'] == 'user' else 'Bot'}: {m['text']}" for m in messages)[:12000]
+    made, card_id = None, None
+    if pitch["type"] == "pitch" and isinstance(data.get("card"), dict):
+        made = card.tidy(data["card"])
+        verdict, reason = moderate.check("", card.text_of(made), moderate.CARD_PROMPT)
+        if verdict == "ok":
+            card_id = store.add_card({"card": made, "label": card.label(pitch), "created_at": clock.stamp(),
+                                      "by": card.first_name(pitch["name"]) if data.get("show_name") else ""})
+        else:
+            logging.info("card held: %s", reason)
     store.add_pitch({**pitch, "status": "new", "source": "chat", "transcript": transcript, "created_at": clock.stamp(),
-                     "visitor": vid, "device": device})
-    recorder.record(analytics.row("pitch_submit", path="/pitch", visitor=vid, device=device, detail="chat"))
-    return {"ok": True}
+                     "visitor": vid, "device": device, "card": made, "card_id": card_id})
+    recorder.record(analytics.row("pitch_submit", path="/pitch", visitor=vid, device=device, detail="chat+card" if card_id else "chat"))
+    return {"ok": True, "card_url": f"/idea/{card_id}?sent=1" if card_id else None}
+
+
+@app.post("/pitch/card")
+async def pitch_card(request: Request):
+    """Draft the visitor's pitch card. Nothing is saved until they send the pitch."""
+    try:
+        pitch = bot.tidy((await request.json()).get("pitch"))
+    except Exception:
+        raise HTTPException(400)
+    device, _, is_bot = analytics.describe(request.headers.get("user-agent", ""))
+    if is_bot or pitch["type"] != "pitch" or len(pitch["what"]) < 10:
+        raise HTTPException(400)
+    vid, day = visitor(request), clock.today()
+    if store.bump(f"card-{vid}-{day}") > 8 or store.bump(f"card-all-{day}") > 300:
+        raise HTTPException(429)
+    try:
+        made = card.make(pitch)
+    except card.Unavailable:
+        raise HTTPException(503)
+    recorder.record(analytics.row("card_made", path="/pitch", visitor=vid, device=device))
+    html = templates.env.get_template("_card.html").render(c=made, label=card.label(pitch), by="", editable=True)
+    return {"card": made, "html": html}
+
+
+@app.get("/idea/{cid}.png")
+def idea_image(cid: str):
+    doc = store.get_card(cid)
+    if not doc:
+        raise HTTPException(404)
+    return Response(card_png(cid, doc), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@functools.lru_cache(maxsize=64)
+def _png(cid: str, blob: str) -> bytes:
+    doc = json.loads(blob)
+    return card.png(doc["card"], doc["label"], doc["by"])
+
+
+def card_png(cid: str, doc: dict) -> bytes:
+    return _png(cid, json.dumps({k: doc.get(k, "") for k in ("card", "label", "by")}, sort_keys=True))
+
+
+@app.get("/idea/{cid}")
+def idea_page(request: Request, cid: str, sent: int = 0):
+    doc = store.get_card(cid)
+    if not doc:
+        raise HTTPException(404)
+    return page(request, "idea.html", c=card.tidy(doc["card"]), label=doc.get("label", ""), by=doc.get("by", ""),
+                cid=cid, sent=bool(sent))
 
 
 @app.get("/pitch/form")

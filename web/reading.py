@@ -1,7 +1,7 @@
 """'What I'm reading': a few AI and tech stories a day from publishers' RSS feeds.
 
 Shown: the headline, the source, a link out, and one line of our own. Feed summaries are
-read only to choose; they're never shown. Refreshed about hourly by the keep-warm ping.
+read only to choose; they're never shown. Refreshed about hourly, inside the keep-warm ping's request.
 """
 import hashlib
 import logging
@@ -85,15 +85,18 @@ def candidates(fetch=None, hours: int = 36) -> list[dict]:
     cfg, _ = config()
     fetch = fetch or (lambda url: httpx.get(url, headers={"User-Agent": UA}, timeout=15, follow_redirects=True).content)
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
-    out = []
-    for f in cfg["feeds"]:
+
+    def one(f):
         try:
             items = parse(fetch(f["url"]), f["name"])
         except Exception as e:
             log.warning("feed %s unreadable: %s", f["name"], e)
-            continue
-        out += [i for i in items if i["published"] and i["published"] >= since][:12]
-    return out
+            return []
+        return [i for i in items if i["published"] and i["published"] >= since][:12]
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return [i for batch in pool.map(one, cfg["feeds"]) for i in batch]
 
 
 def _gemini_pick(cands: list[dict], n: int) -> list[dict]:
@@ -150,13 +153,17 @@ def refresh(store, fetch=None, pick=None) -> str:
         _lock.release()
 
 
-def refresh_if_due(store) -> None:
+def refresh_if_due(store) -> str:
+    """Run inside the keep-warm request: Cloud Run pauses the processor once a request is
+    answered, so background threads never finish. The scheduler waits up to 3 minutes."""
     if os.environ.get("SITE_BACKEND") != "cloud":  # only the real site reads the feeds on its own
-        return
+        return "local"
     try:
         if time.time() - (store.reading_refreshed() or 0) < REFRESH_MIN * 60:
-            return
+            return "not due"
+        out = refresh(store)
     except Exception as e:
-        log.warning("reading state unavailable: %s", e)
-        return
-    threading.Thread(target=lambda: log.info("reading: %s", refresh(store)), daemon=True).start()
+        log.warning("reading refresh failed: %s", e)
+        return "failed"
+    log.info("reading: %s", out)
+    return out

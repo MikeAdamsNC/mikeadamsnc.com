@@ -306,7 +306,7 @@ def test_chat_page_greets_and_offers_the_form(client):
 
 def test_chat_asks_then_wraps_up_with_a_summary(client):
     out, _ = chat(client, "An app that finds food trucks near me.")
-    assert out["ready"] is False and out["chips"] == "kind"             # a button question
+    assert out["ready"] is False and out["pitch"]["what"]               # the page asks the button questions next
     assert out["streamed"].strip() == out["reply"]                      # the reply arrived in pieces
     out, history = chat(client, "An app that finds food trucks near me.", "It's an app, for selling")
     assert out["ready"] is True and out["pitch"]["what"] == "An app that finds food trucks near me."

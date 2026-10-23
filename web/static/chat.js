@@ -1,6 +1,6 @@
 // The pitch chat. The conversation lives here in the page until the visitor sends it.
-// Free-text answers go to the AI (its reply streams in as it's written); the questions with fixed
-// answers are buttons, and after a tap this page asks the next one itself, with no AI wait.
+// Free-text answers go to the AI (its reply streams in as it's written). The questions with fixed
+// answers are buttons this page always asks itself, with no AI wait; meanwhile the AI only reacts.
 // Beside the chat, the idea is drawn as an app listing that fills in every couple of answers.
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -67,6 +67,7 @@
     msgs.append(why, row); scroll(row);
   };
   const clearChips = () => msgs.querySelectorAll(".qchips, .starters").forEach((r) => { r.querySelectorAll("button").forEach((b) => (b.disabled = true)); r.classList.add("used"); });
+  const askFixed = (field) => { const q = CHIPS[field].ask; botRow(q); history.push({ role: "bot", text: q }); showChips(field); };
   const nextFixed = () => (pitch.what && pitch.type !== "site idea" ? FIXED.find((f) => !pitch[f]) : null);
 
   // ---------- progress ----------
@@ -89,7 +90,7 @@
       pitch[chip.field] = chip.value;
       progress(); draw();
       const next = nextFixed();
-      if (next) { const q = CHIPS[next].ask; botRow(q); history.push({ role: "bot", text: q }); showChips(next); return; }
+      if (next) { askFixed(next); return; }
     }
     aiTurn();
   };
@@ -139,7 +140,7 @@
       for (const [k, v] of Object.entries(done.pitch || {})) if (v && !(FIXED.includes(k) && pitch[k])) pitch[k] = v;
       progress();
       if (done.ready && pitch.what) { ready = true; progress(); showSummary(); draw(true); }
-      else { const f = done.chips && !pitch[done.chips] ? done.chips : null; if (f) showChips(f); draw(); }
+      else { const f = nextFixed(); if (f) askFixed(f); draw(); }
     } catch (_) {
       begin();
       bub.textContent = "Something went wrong on my end. Try again, or finish with the form; everything you said comes with you.";

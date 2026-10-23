@@ -26,7 +26,6 @@ SCHEMA = {
     "type": "OBJECT",
     "properties": {
         "reply": {"type": "STRING"},
-        "chips": {"type": "STRING", "enum": ["kind", "purpose", "payment", "none"]},
         "ready": {"type": "BOOLEAN"},
         "type": {"type": "STRING", "enum": ["pitch", "site idea"]},
         "what": {"type": "STRING"},
@@ -38,11 +37,11 @@ SCHEMA = {
         "name": {"type": "STRING"},
         "email": {"type": "STRING"},
     },
-    "required": ["reply", "chips", "ready", "type", "what", "kind", "purpose", "payment"],
-    "propertyOrdering": ["reply", "chips", "ready", "type", "what", "kind", "purpose", "payment", "features", "marketing", "name", "email"],
+    "required": ["reply", "ready", "type", "what", "kind", "purpose", "payment"],
+    "propertyOrdering": ["reply", "ready", "type", "what", "kind", "purpose", "payment", "features", "marketing", "name", "email"],
 }  # reply first, so it can stream to the page
-# The questions with fixed answers are buttons. The page asks the next one itself (no AI wait)
-# after a button is tapped; the AI asks one only right after the visitor types.
+# The questions with fixed answers are buttons, always asked by the page itself (no AI wait).
+# While one is still unanswered, the AI only reacts; the page then asks the next one.
 CHIPS = {
     "kind": {"ask": "Is it an app, a website, or something else?", "why": "what kind of thing",
              "options": [["An app", "App"], ["A website", "Website"], ["Something else", "Something else"], ["Not sure", "Not sure"]]},
@@ -89,8 +88,8 @@ def _fake(messages: list[dict]) -> dict:
     """Local and test stand-in: asks one button question, then wraps up."""
     said = [m["text"] for m in messages if m["role"] == "user"]
     if len(said) < 2:
-        return {"reply": "Love it. Is it an app, a website, or something else?", "chips": "kind", "ready": False}
-    return {"reply": "Here's what I've got. Check it and send it to Mike.", "chips": "none", "ready": True,
+        return {"reply": "Love it.", "ready": False, "pitch": {"type": "pitch", "what": said[0]}}
+    return {"reply": "Here's what I've got. Check it and send it to Mike.", "ready": True,
             "pitch": {"type": "pitch", "what": said[0], "kind": "App" if "app" in said[1].lower() else "Not sure"}}
 
 
@@ -127,20 +126,19 @@ def partial_reply(buf: str) -> str:
 
 def _finish(out: dict) -> dict:
     reply = str(out.get("reply", "")).strip()[:1200] or "Tell me a bit more?"
-    chips = out.get("chips") if out.get("chips") in CHIPS else None
     pitch = out.get("pitch") if isinstance(out.get("pitch"), dict) else {k: out.get(k) for k in ["type", *FIELDS]}
-    return {"reply": reply, "ready": bool(out.get("ready")), "chips": chips, "pitch": tidy(pitch)}
+    return {"reply": reply, "ready": bool(out.get("ready")), "pitch": tidy(pitch)}
 
 
 def stream(messages: list[dict]):
     """The bot's next reply as it's written: yields ("delta", text) pieces, then ("done", answer).
     Raises Unavailable if the AI can't be reached before anything was said."""
     if not messages or messages[-1]["role"] != "user":
-        yield "done", {"reply": GREETING, "ready": False, "chips": None, "pitch": tidy(None)}
+        yield "done", {"reply": GREETING, "ready": False, "pitch": tidy(None)}
         return
     if sum(1 for m in messages if m["role"] == "user") > MAX_TURNS:
         yield "done", {"reply": "We've covered a lot. Let's wrap up: check the summary and send it.", "ready": True,
-                       "chips": None, "pitch": tidy(None)}
+                       "pitch": tidy(None)}
         return
     if os.environ.get("SITE_BACKEND") != "cloud":
         out = _fake(messages)

@@ -76,7 +76,9 @@
     $("wave").style.strokeDashoffset = 100 - (ready ? 100 : n * 20);
     $("step").innerHTML = ready ? "<b>ready to send</b>" : `<b>${n} of 5</b>${n >= 4 ? " · almost a pitch" : ""}`;
     const label = [KIND[pitch.kind] || "Idea", PURPOSE[pitch.purpose]].filter(Boolean).join(" · ");
-    if (!card) { $("ghostkind").textContent = pitch.kind || pitch.purpose ? label : "Your idea"; $("minilabel").textContent = label; }
+    if (!card) $("ghostkind").textContent = pitch.kind || pitch.purpose ? label : "Your idea";
+    else { const k = slot.querySelector(".pc-kind"); if (k && k.textContent !== label) { k.textContent = label; k.classList.add("fresh"); } }
+    $("minilabel").textContent = label;
   };
 
   // ---------- one answer from the visitor ----------
@@ -191,7 +193,7 @@
         const map = { name: ".pc-name", tagline: ".pc-tag", f0: ".pc-feat li:nth-child(1)", f1: ".pc-feat li:nth-child(2)", f2: ".pc-feat li:nth-child(3)", screen: ".pc-phone" };
         for (const k of Object.keys(map)) if (before[k] !== after[k]) slot.querySelector(map[k])?.classList.add("fresh");
       } else slot.querySelector(".pcard")?.classList.add("arrive");
-      mini();
+      progress(); mini();  // answers given while it was drawing
     } catch (_) {}
     finally {
       if (ready && card) editable();

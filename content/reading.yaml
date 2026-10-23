@@ -1,0 +1,28 @@
+# "What I'm reading": publishers' own RSS feeds. Only the headline, the source and a link
+# are shown, plus one line of our own; no article text or images are copied.
+pick_per_refresh: 4      # at most this many new stories each refresh (every hour or so)
+keep_days: 14
+feeds:
+  - {name: The Verge, url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"}
+  - {name: Ars Technica, url: "https://feeds.arstechnica.com/arstechnica/technology-lab"}
+  - {name: TechCrunch, url: "https://techcrunch.com/category/artificial-intelligence/feed/"}
+  - {name: MIT Technology Review, url: "https://www.technologyreview.com/feed/"}
+  - {name: Wired, url: "https://www.wired.com/feed/tag/ai/latest/rss"}
+  - {name: Google, url: "https://blog.google/technology/ai/rss/"}
+  - {name: OpenAI, url: "https://openai.com/news/rss.xml"}
+  - {name: Simon Willison, url: "https://simonwillison.net/atom/everything/"}
+  - {name: 9to5Mac, url: "https://9to5mac.com/feed/"}
+---
+You pick stories for the "What I'm reading" shelf on MikeAdamsNC.com, the personal site of a
+builder who experiments with new technology as it shows up (Claude Code, Grok, Gemini, iOS
+apps, APIs, AI tools, home tech). Visitors are anyone, technical or not.
+
+From the numbered candidates, pick up to N stories a curious builder would actually want to
+read: new tools and models people can try, real capabilities, notable launches, interesting
+experiments, practical how-tos, big shifts in AI or Apple platforms. Skip funding rounds,
+lawsuits, executive moves, rumors, listicles, deals and gadget reviews, and anything about
+war, crime or tragedy. Prefer variety across sources. Never pick two about the same news.
+
+For each pick write one plain sentence (under 20 words) on why it's worth a builder's time,
+in your own words, plain enough for a non-technical visitor (no jargon like "architecture" or
+"framework"). Don't repeat the headline, don't hype, no exclamation points, no emoji.

@@ -74,7 +74,7 @@ The home page's lab panel shows real signals from home (Archer locked item 31, a
 2026-10-22). Archer's `site_lab` job builds a small summary in plain code every 5
 minutes and posts it to `/api/lab` with Archer's token; the site can't reach Archer.
 
-- **Grill, two hours late:** on or off, the cut from a fixed list (never the typed cook
+- **Grill, two hours late** (the delay isn't labeled on the panel; the X-ray says it): on or off, the cut from a fixed list (never the typed cook
   name), the grill and meat temperatures.
 - **Raleigh radar, now:** rain, bugs, birds or clear, with how many readings it sees.
 - **Trail cams, yesterday:** the species tally; people, pets and vehicles never appear.
@@ -84,6 +84,18 @@ minutes and posts it to `/api/lab` with Archer's token; the site can't reach Arc
 The site keeps only the latest summary and photo (Firestore `lab`) and checks every
 field it's sent; anything else is dropped. If the summary is over 30 minutes old, or
 Archer's setting `site/live_lab` is `off`, the panel goes back to "quiet in the lab".
+
+## What I'm reading
+
+A shelf of AI and tech stories on the home page (five newest) and `/reading` (last 14
+days). The list of publishers' RSS feeds and the instructions for choosing are in
+`content/reading.yaml`. About hourly (riding on the keep-warm ping), the site reads the
+feeds, offers Gemini 3.8 Flash the stories from the last day and a half it hasn't seen,
+and saves up to four picks, each with one plain line of our own on why it's worth a
+builder's time. Only the headline, the source and a link out are shown; feed summaries
+are read to choose and never stored or shown; no article text or images are copied.
+Stories it passed over are remembered so they aren't offered again. Firestore
+collections `reading` and `reading_skipped`, pruned after 14 days.
 
 ## Analytics (ours, no cookies)
 

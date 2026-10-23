@@ -202,6 +202,10 @@ the public can comment.
 
 ## Changing the site
 
+Every stylesheet and script link carries a fingerprint of the file's contents
+(`/static/site.css?v=…`, the `asset()` helper in `web/app.py`), so after a deploy browsers fetch
+the new files instead of mixing a saved old stylesheet with new code.
+
 1. Edit on a branch; run the tests: `.venv/bin/python -m pytest -q web/tests`.
 2. Merge. Then `PREVIEW=1 ./deploy/deploy.sh` puts it on a private preview address
    without touching the live site, and `./deploy/deploy.sh` makes it live (about two

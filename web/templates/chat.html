@@ -9,6 +9,13 @@
   <div class="chat" id="chat" data-x="PITCH BOT|Gemini 3.8 Flash on Vertex AI · nothing is saved until you send the summary · rules in content/bot.md">
     <div class="msgs" id="msgs" aria-live="polite"><div class="bub bot">{{ greeting }}</div></div>
     <div class="summary" id="summary" hidden>
+      <div class="cardbox" id="cardbox" hidden>
+        <div class="mono">Your idea, as an app listing</div>
+        <div id="cardslot"></div>
+        <div class="card-opts"><span class="fine">Tap any words on the card to change them.</span>
+          <label class="fine" id="namebox" hidden><input type="checkbox" id="showname"> Put my first name on it</label>
+          <button class="btn b2 small" id="again" type="button">Try another</button></div>
+      </div>
       <div class="mono">Your pitch</div>
       <dl id="sumlist"></dl>
       <div class="sum-btns"><button class="btn b1" id="send" type="button">Send it to Mike</button><button class="btn b2" id="keep" type="button">Keep talking</button></div>

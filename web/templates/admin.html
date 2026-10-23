@@ -41,6 +41,7 @@
     <div class="pi-meta">{% for k in ['kind','purpose','payment'] if p[k] %}<span>{{ p[k] }}</span>{% endfor %}</div>
     {% if p.features %}<p><b>Ideas:</b> {{ p.features }}</p>{% endif %}
     {% if p.marketing %}<p><b>Marketing:</b> {{ p.marketing }}</p>{% endif %}
+    {% if p.card %}<p><b>Card:</b> {% if p.card_id %}<a href="/idea/{{ p.card_id }}">{{ p.card.name }}</a>{% else %}{{ p.card.name }} (held by the AI check, no page){% endif %} · {{ p.card.tagline }}</p>{% endif %}
     {% if p.transcript %}<details class="tr"><summary class="fine">The conversation</summary><pre>{{ p.transcript }}</pre></details>{% endif %}
     <p class="fine">{{ p.name or 'No name' }}{% if p.email %} · <a href="mailto:{{ p.email }}">{{ p.email }}</a>{% endif %}</p>
   </div>

@@ -301,7 +301,7 @@ def test_chat_asks_then_wraps_up_with_a_summary(client):
 def test_sending_the_summary_saves_a_chat_pitch(client):
     out, history = chat(client, "An app that finds food trucks near me.", "an app")
     r = client.post("/pitch/chat/send", json={"pitch": out["pitch"], "messages": history})
-    assert r.json() == {"ok": True}
+    assert r.json() == {"ok": True, "card_url": None}
     p = site.store.list_pitches()[0]
     assert p["source"] == "chat" and p["status"] == "new" and "Visitor: An app that finds food trucks" in p["transcript"]
 
@@ -480,3 +480,56 @@ def test_atom_and_rss_both_parse():
 def test_a_bad_pick_index_is_ignored(client):
     out = reading.refresh(site.store, fetch=fake_fetch, pick=lambda c, n: [{"i": 99, "line": "x"}, {"i": "0", "line": "y"}])
     assert out.startswith("0 picked")
+
+
+# ---------- the pitch card ----------
+def card_for(client, **send):
+    out, history = chat(client, "An app that finds food trucks near me.", "an app")
+    pitch = {**out["pitch"], "name": "Jordan Lee"}
+    made = client.post("/pitch/card", json={"pitch": pitch})
+    assert made.status_code == 200 and 'class="pcard"' in made.json()["html"] and "contenteditable" in made.json()["html"]
+    c = made.json()["card"]
+    return client.post("/pitch/chat/send", json={"pitch": pitch, "messages": history, "card": c, **send}), c
+
+
+def test_a_sent_card_gets_its_own_unlisted_page_and_image(client):
+    r, c = card_for(client)
+    url = r.json()["card_url"]
+    assert url.startswith("/idea/") and url.endswith("?sent=1")
+    cid = url.split("/")[2].split("?")[0]
+    page_ = client.get(url).text
+    assert str(escape(c["name"])) in page_ and 'name="robots" content="noindex"' in page_
+    assert f"https://mikeadamsnc.com/idea/{cid}.png" in page_ and "Sent to Mike" in page_
+    assert "Jordan" not in page_  # the name goes on only if they ask
+    img = client.get(f"/idea/{cid}.png")
+    assert img.status_code == 200 and img.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert site.store.list_pitches()[0]["card_id"] == cid
+
+
+def test_first_name_only_when_asked(client):
+    r, _ = card_for(client, show_name=True)
+    assert "<b>Jordan</b>" in client.get(r.json()["card_url"]).text
+
+
+def test_a_card_that_fails_the_check_is_not_shared(client):
+    out, history = chat(client, "An app that finds food trucks near me.", "an app")
+    bad = {"name": "Spam", "tagline": "buy now http://a.example http://b.example", "features": [], "icon": "truck", "screen": {}}
+    r = client.post("/pitch/chat/send", json={"pitch": out["pitch"], "messages": history, "card": bad})
+    assert r.json()["card_url"] is None and site.store.list_pitches()[0]["card"]["name"] == "Spam"
+
+
+def test_unknown_cards_404(client):
+    assert client.get("/idea/nope").status_code == 404 and client.get("/idea/nope.png").status_code == 404
+
+
+def test_site_ideas_get_no_card(client):
+    assert client.post("/pitch/card", json={"pitch": {"type": "site idea", "what": "Add a dark mode please"}}).status_code == 400
+
+
+def test_card_tidy_keeps_it_drawable():
+    from web import card
+    c = card.tidy({"name": "x" * 80, "icon": "not-an-icon", "features": ["a", "b", "c", "d"],
+                   "screen": {"hero": "hologram", "rows": [{"title": str(i), "sub": ""} for i in range(9)]}})
+    assert len(c["name"]) <= card.LIMITS["name"] and c["icon"] == "lightbulb" and len(c["features"]) == 3
+    assert c["screen"]["hero"] == "list" and len(c["screen"]["rows"]) == 5
+    assert card.label({"kind": "App", "purpose": "Business"}) == "App · for a business" and card.label({}) == "Idea"

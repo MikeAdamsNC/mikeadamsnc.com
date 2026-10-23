@@ -37,6 +37,24 @@ hit, the chat points to the form. The AI's thinking is set to "low" (faster and 
 on this model) and a reply that runs on is retried. A $5/month budget alert on Vertex AI
 and the Gemini API emails Mike at 50, 90 and 100 percent.
 
+**The pitch card.** When the summary shows up for a real pitch (not a site idea), the
+AI also draws the idea as an App Store style listing: a made-up product name, a one-line
+tagline, three features, an icon, and the app's main screen on a phone with believable
+sample content (`web/card.py`; its instructions are plain words in `content/card.md`). The
+AI only writes words and picks from fixed lists (96 Lucide line icons in
+`web/static/icons/`, five screen layouts: map, chart, calendar, photo, list); our own code
+draws the card, so it always looks on-brand. The visitor can tap any words to change them,
+ask for another, and choose to put their first name on it (off by default). Nothing is
+saved until they send. On send, the card gets the same AI check comments get (spam, hate,
+private details); if it passes it's saved in Firestore `cards` under a random, unguessable
+id and the visitor lands on its own page, `/idea/<id>`, with Share, Save the image and a
+"Pitch your own idea" button. Only people with the link can see it, and search engines are
+told to skip it. `/idea/<id>.png` is the 1200 x 630 picture that link previews show (X,
+LinkedIn, iMessage), drawn on the server with Pillow to match the page. If the card fails
+the check, the pitch still reaches Mike with the card attached, but there's no page. Limits:
+8 cards per visitor per day, 300 site-wide. Icon masks for the picture are made by
+`brand/build_card_icons.py` (run it after adding an icon).
+
 **The form** (`/pitch/form`) saves each pitch to Firestore (database `mikeadamsnc`, collection `pitches`).
 Spam protection: a hidden trap field, a check that a person took at least 3 seconds,
 and at most 5 pitches per visitor per day. Mike sees and sorts pitches (new, maybe,
@@ -177,5 +195,5 @@ the public can comment.
 
 Expected under $1/month: Cloud Run, Firestore and BigQuery all stay inside Google's
 free monthly allowances at this traffic; the scheduler job is one of three free ones.
-The AI (pitch chat and comment checks) costs about 2 to 3 cents a pitch conversation and
+The AI (pitch chat, pitch cards and comment checks) costs about 3 to 4 cents a pitch conversation and
 fractions of a cent a comment, watched by the $5 budget alert.

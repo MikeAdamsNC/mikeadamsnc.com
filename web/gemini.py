@@ -21,7 +21,7 @@ def _token() -> str:
 
 
 def json_reply(contents: list[dict], system: str | None = None, schema: dict | None = None,
-               max_tokens: int = 600, temperature: float = 0.4) -> dict:
+               max_tokens: int = 600, temperature: float = 0.4, timeout: float = 30) -> dict:
     """Ask for a JSON answer; returns the parsed object. Raises on any failure.
 
     Thinking is set LOW: on 3.8 Flash a zero thinking budget is not honored and answers ran
@@ -36,7 +36,7 @@ def json_reply(contents: list[dict], system: str | None = None, schema: dict | N
         body["systemInstruction"] = {"parts": [{"text": system}]}
     last = None
     for attempt in range(3):
-        r = httpx.post(URL, json=body, headers={"Authorization": f"Bearer {_token()}"}, timeout=30)
+        r = httpx.post(URL, json=body, headers={"Authorization": f"Bearer {_token()}"}, timeout=timeout)
         if r.status_code in (429, 500, 502, 503, 504) and attempt < 2:
             time.sleep(1.5 * (attempt + 1))
             continue

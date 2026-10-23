@@ -12,8 +12,8 @@ Write:
 - features: exactly three, each under 38 characters, starting with what the user gets. Use the
   visitor's own feature ideas first; fill the rest with the obvious core of the idea.
 - icon: the one icon from the list that best fits the idea.
-- screen: the app's main screen as it would look on a phone.
-  - title: the screen's heading (under 18 characters), like "Near you" or "This week".
+- The app's main screen as it would look on a phone:
+  - screen_title: the screen's heading (under 18 characters), like "Near you" or "This week".
   - hero: the picture at the top: "map" (places, distance), "chart" (tracking, money, progress),
     "calendar" (dates, schedules, bookings), "photo" (pictures, media, things to look at), or
     "list" (no picture, just rows).

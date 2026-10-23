@@ -26,22 +26,23 @@ HEROES = ["map", "chart", "calendar", "photo", "list"]
 LIMITS = {"name": 22, "tagline": 90, "feature": 40, "title": 18, "row_title": 24, "row_sub": 34, "button": 16}
 KIND_WORDS = {"App": "App", "Website": "Website"}
 PURPOSE_WORDS = {"Personal use": "for personal use", "Business": "for a business", "Something to sell": "to sell"}
+# Flat on purpose: with the screen as a nested object, 3.8 Flash often ran on inside it until it
+# hit its length limit. The icon list goes in the instructions (Vertex refuses a 96-name enum).
 SCHEMA = {
     "type": "OBJECT",
     "properties": {
         "name": {"type": "STRING"},
         "tagline": {"type": "STRING"},
         "features": {"type": "ARRAY", "items": {"type": "STRING"}},
-        "icon": {"type": "STRING", "enum": ICONS},
-        "screen": {"type": "OBJECT", "properties": {
-            "title": {"type": "STRING"},
-            "hero": {"type": "STRING", "enum": HEROES},
-            "rows": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {
-                "title": {"type": "STRING"}, "sub": {"type": "STRING"}}}},
-            "button": {"type": "STRING"},
-        }},
+        "icon": {"type": "STRING"},
+        "screen_title": {"type": "STRING"},
+        "hero": {"type": "STRING", "enum": HEROES},
+        "rows": {"type": "ARRAY", "items": {"type": "OBJECT", "properties": {"title": {"type": "STRING"}, "sub": {"type": "STRING"}},
+                                             "required": ["title", "sub"]}},
+        "button": {"type": "STRING"},
     },
-    "required": ["name", "tagline", "features", "icon", "screen"],
+    "required": ["name", "tagline", "features", "icon", "screen_title", "hero", "rows", "button"],
+    "propertyOrdering": ["name", "tagline", "features", "icon", "screen_title", "hero", "rows", "button"],
 }
 
 
@@ -112,13 +113,19 @@ def make(pitch: dict) -> dict:
     if os.environ.get("SITE_BACKEND") != "cloud":
         return tidy(_fake(pitch))
     facts = "\n".join(f"{k}: {pitch[k]}" for k in ("what", "kind", "purpose", "features", "marketing") if pitch.get(k))
-    try:
-        out = gemini.json_reply([{"role": "user", "parts": [{"text": "The pitch:\n" + facts}]}],
-                                system=RULES.read_text().split("---", 1)[1].strip(), schema=SCHEMA,
-                                max_tokens=2000, temperature=0.8)
-    except Exception as e:
-        log.warning("card unavailable: %s", e)
-        raise Unavailable from e
+    system = RULES.read_text().split("---", 1)[1].strip() + "\n\nIcons: " + ", ".join(ICONS)
+    last = None
+    for _ in range(2):  # now and then an answer hangs; a second try usually comes right back
+        try:
+            out = gemini.json_reply([{"role": "user", "parts": [{"text": "The pitch:\n" + facts}]}], system=system,
+                                    schema=SCHEMA, max_tokens=1200, temperature=0.5, timeout=25)
+            break
+        except Exception as e:
+            last = e
+    else:
+        log.warning("card unavailable: %s", last)
+        raise Unavailable from last
+    out["screen"] = {"title": out.get("screen_title"), "hero": out.get("hero"), "rows": out.get("rows"), "button": out.get("button")}
     return tidy(out)
 
 

@@ -87,7 +87,7 @@ Archer's setting `site/live_lab` is `off`, the panel goes back to "quiet in the 
 
 ## What I'm reading
 
-A shelf of AI and tech stories on the home page (five newest) and `/reading` (last 14
+A shelf of AI and tech stories on the home page (six newest) and `/reading` (last 14
 days). The list of publishers' RSS feeds and the instructions for choosing are in
 `content/reading.yaml`. About hourly (riding on the keep-warm ping), the site reads the
 feeds, offers Gemini 3.8 Flash the stories from the last day and a half it hasn't seen,

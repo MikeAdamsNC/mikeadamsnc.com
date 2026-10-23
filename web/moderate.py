@@ -31,7 +31,7 @@ def _gemini(experiment: str, comment: str, prompt: str = PROMPT) -> tuple[str, s
     from . import gemini
 
     out = gemini.json_reply([{"role": "user", "parts": [{"text": prompt.replace("EXPERIMENT", experiment).replace("COMMENT", comment)}]}],
-                            max_tokens=2000, temperature=0)
+                            max_tokens=2000, temperature=0, timeout=40)
     verdict = "ok" if out.get("verdict") == "ok" else "hold"
     return verdict, str(out.get("reason", ""))[:120]
 

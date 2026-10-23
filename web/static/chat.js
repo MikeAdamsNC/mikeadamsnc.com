@@ -86,11 +86,11 @@
 
   document.getElementById("keep").addEventListener("click", () => { summary.hidden = true; cardbox.hidden = true; card = null; say.focus(); });
   document.getElementById("send").addEventListener("click", async (e) => {
-    const b = e.currentTarget; b.disabled = true;
+    const b = e.currentTarget; b.disabled = true; b.textContent = card ? "Sending… checking your card" : "Sending…";
     const r = await fetch("/pitch/chat/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pitch, messages: history, card: editedCard(), show_name: showname.checked }) });
     if (r.ok) { const out = await r.json().catch(() => ({})); location.href = out.card_url || "/pitch/thanks"; return; }
     const out = await r.json().catch(() => ({}));
     bubble("bot", out.error || "That didn't go through. Try again in a moment.");
-    b.disabled = false;
+    b.disabled = false; b.textContent = "Send it to Mike";
   });
 })();

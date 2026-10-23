@@ -1,4 +1,4 @@
-"""One door to Gemini 3.8 Flash on Vertex AI (global endpoint; it isn't offered in us-east1).
+"""One door to Gemini 3.5 Flash on Vertex AI (global endpoint; it isn't offered in us-east1).
 
 Uses the site's own Google identity on Cloud Run, so there's no API key to keep.
 """
@@ -7,7 +7,10 @@ import time
 
 import httpx
 
-MODEL = "gemini-3.8-flash"
+# 3.5, not 3.8: on 2026-10-23 Gemini 3.8 Flash on Vertex stalled 15-90s (or timed out) even on a
+# two-word prompt, from every project, while 3.5 Flash answered in 1-2s with nearly the same quality.
+# Switch back here once 3.8 is steady.
+MODEL = "gemini-3.5-flash"
 URL = f"https://aiplatform.googleapis.com/v1/projects/macmanager-home/locations/global/publishers/google/models/{MODEL}:generateContent"
 
 
@@ -24,7 +27,7 @@ def json_reply(contents: list[dict], system: str | None = None, schema: dict | N
                max_tokens: int = 600, temperature: float = 0.4, timeout: float = 30) -> dict:
     """Ask for a JSON answer; returns the parsed object. Raises on any failure.
 
-    Thinking is set LOW: on 3.8 Flash a zero thinking budget is not honored and answers ran
+    Thinking is set LOW: on Flash models a zero thinking budget is not honored and answers ran
     long and slow. A rate-limit (429), a Google-side error, or an answer that ran on past its length
     gets up to two more tries."""
     config = {"maxOutputTokens": max_tokens, "responseMimeType": "application/json", "temperature": temperature,

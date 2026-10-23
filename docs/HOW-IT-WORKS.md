@@ -24,7 +24,7 @@ Plain language. Update this in the same change as anything it describes.
 
 ## Ideas people pitch
 
-**The chat** (`/pitch`) is the main way in. An AI (Gemini 3.8 Flash, `web/bot.py`, through
+**The chat** (`/pitch`) is the main way in. An AI (Gemini 3.5 Flash, `web/bot.py`, through
 `web/gemini.py`) asks the pitch questions one at a time and, when it has enough, shows a
 summary the visitor sends or keeps editing. It says it's an AI, never promises anything,
 quotes prices or agrees to terms, knows nothing private, and stays on ideas and site
@@ -95,7 +95,7 @@ scale plus a head start for newer experiments (each experiment's `added` date in
 and Top are the other tabs. The home page's experiment log is in Hot order too.
 
 **Comments:** need Sign in with Google (the name on the account is shown; the email
-never is). Each comment goes to an AI check first (`web/moderate.py`, Gemini 3.8 Flash
+never is). Each comment goes to an AI check first (`web/moderate.py`, Gemini 3.5 Flash
 on Vertex AI's global endpoint). "ok" posts at once; spam, abuse or someone's private
 details are held for Mike on the dashboard, where he approves or removes; if the AI
 can't be reached the comment is held, never posted unchecked. Ten comments per person
@@ -124,7 +124,7 @@ Archer's setting `site/live_lab` is `off`, the panel goes back to "quiet in the 
 A shelf of AI and tech stories on the home page (six newest) and `/reading` (last 14
 days). The list of publishers' RSS feeds and the instructions for choosing are in
 `content/reading.yaml`. About hourly (riding on the keep-warm ping), the site reads the
-feeds, offers Gemini 3.8 Flash the stories from the last day and a half it hasn't seen,
+feeds, offers Gemini 3.5 Flash the stories from the last day and a half it hasn't seen,
 and saves up to four picks, each with one plain line of our own on why it's worth a
 builder's time. Only the headline, the source and a link out are shown; feed summaries
 are read to choose and never stored or shown; no article text or images are copied.
@@ -157,7 +157,7 @@ versions read the same content files.
 - **Terminal** (`web/static/terminal.js`): the site as a command line, reading
   `/api/site.json` (everything public on the site, in one file). `help` lists the
   commands; visitors can read experiments and vote from it. Each command typed is counted.
-- **Talk to it** (`web/talk.py`, instructions in `content/talk.md`): an AI (Gemini 3.8
+- **Talk to it** (`web/talk.py`, instructions in `content/talk.md`): an AI (Gemini 3.5
   Flash) answers questions using only the site's own content and links to real pages
   (links to anywhere else are dropped). 40 questions per visitor per day, sharing the
   pitch chat's site-wide daily cap.
@@ -212,6 +212,11 @@ the new files instead of mixing a saved old stylesheet with new code.
    minutes either way).
 
 ## Cost
+
+The model is set in one place, `web/gemini.py`. It's Gemini 3.5 Flash since 2026-10-23: that day
+Gemini 3.8 Flash on Vertex stalled 15 to 90 seconds (or timed out) even on a two-word prompt, from
+every project, while 3.5 Flash answered in 1 to 2 seconds with nearly the same quality. Switch back
+there once 3.8 is steady.
 
 Expected under $1/month: Cloud Run, Firestore and BigQuery all stay inside Google's
 free monthly allowances at this traffic; the scheduler job is one of three free ones.

@@ -16,6 +16,9 @@ h3{font-weight:800;letter-spacing:-.01em}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 22px;border-radius:12px;font-weight:700;font-size:16px;border:0;cursor:pointer;font-family:inherit}
 .b1{background:var(--water);color:#fff}.b1:hover{background:#095964}
 .b2{border:1.5px solid var(--ink);background:transparent;color:var(--ink)}.b2:hover{background:var(--white)}
+.b3{background:var(--ink);color:#fff}.b3:hover{background:#1A2A37}.b3 b{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--aqua);color:var(--ink);align-items:center;justify-content:center;font:800 14px Manrope}
+.hint{margin-top:14px;font:500 12px/1.6 'JetBrains Mono';color:#5A6B76}.hint kbd{font:inherit;border:1px solid #9AA9B2;border-radius:4px;padding:0 5px}
+@media (hover:none){.hint .key{display:none}}
 .pill{display:inline-block;font-family:'JetBrains Mono';font-size:11px;padding:4px 10px;border-radius:99px;background:rgba(127,214,207,.35);color:var(--ink)}
 .tools{display:flex;flex-wrap:wrap;gap:8px}.tools span{font-size:14px;font-weight:600;padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--line)}
 .verdict{font-family:'JetBrains Mono';font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:99px}

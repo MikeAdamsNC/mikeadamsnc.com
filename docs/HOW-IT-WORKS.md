@@ -136,7 +136,9 @@ versions read the same content files.
 
 ## The X-ray view
 
-The λ button (or the X key) turns the page into a blueprint. Anything with a `data-x`
+The λ button in the corner (or the X key) turns the page into a blueprint. The home
+page also has an "X-ray this page" button next to the other two up top, with a one-line
+hint under it, so visitors find it (button presses count as `hero_xray` in analytics). Anything with a `data-x`
 attribute in a template is outlined and labeled; the "How this page works" panel shows
 the server, how long this page took to build, pages served today (from analytics,
 cached five minutes), the version and the last deploy.

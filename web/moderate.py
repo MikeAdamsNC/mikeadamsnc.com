@@ -46,8 +46,9 @@ def _simple(comment: str) -> tuple[str, str]:
 def check(experiment: str, comment: str, prompt: str = PROMPT) -> tuple[str, str]:
     if os.environ.get("SITE_BACKEND") != "cloud":
         return _simple(comment)
-    try:
-        return _gemini(experiment, comment, prompt)
-    except Exception as e:  # never post unchecked
-        log.warning("moderation unavailable: %s", e)
-        return "hold", "AI check unavailable"
+    for attempt in range(2):  # one slow answer shouldn't hold a good comment or card
+        try:
+            return _gemini(experiment, comment, prompt)
+        except Exception as e:  # never post unchecked
+            log.warning("moderation unavailable (try %d): %s", attempt + 1, e)
+    return "hold", "AI check unavailable"

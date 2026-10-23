@@ -24,14 +24,14 @@ def _token() -> str:
 
 
 def json_reply(contents: list[dict], system: str | None = None, schema: dict | None = None,
-               max_tokens: int = 600, temperature: float = 0.4, timeout: float = 30) -> dict:
+               max_tokens: int = 600, temperature: float = 0.4, timeout: float = 30, think: bool = True) -> dict:
     """Ask for a JSON answer; returns the parsed object. Raises on any failure.
 
-    Thinking is set LOW: on Flash models a zero thinking budget is not honored and answers ran
-    long and slow. A rate-limit (429), a Google-side error, or an answer that ran on past its length
+    Thinking is LOW by default; think=False turns it off (3.5 Flash honors that; 3.8 did not), which
+    halves the time for jobs that don't need it, like the pitch card. A rate-limit (429), a Google-side error, or an answer that ran on past its length
     gets up to two more tries."""
     config = {"maxOutputTokens": max_tokens, "responseMimeType": "application/json", "temperature": temperature,
-              "thinkingConfig": {"thinkingLevel": "LOW"}}
+              "thinkingConfig": {"thinkingLevel": "LOW"} if think else {"thinkingBudget": 0}}
     if schema:
         config["responseSchema"] = schema
     body = {"contents": contents, "generationConfig": config}

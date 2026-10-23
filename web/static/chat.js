@@ -181,7 +181,7 @@
     drawing = true; drawnAt = answers;
     $("bnote").textContent = card ? "updating…" : "drawing your idea…";
     try {
-      const r = await fetch("/pitch/card", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pitch, editable: ready }) });
+      const r = await fetch("/pitch/card", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pitch }) });
       if (!r.ok) throw new Error(r.status);
       const out = await r.json(), before = fields(card);
       card = out.card; slot.innerHTML = out.html;
@@ -191,14 +191,19 @@
         for (const k of Object.keys(map)) if (before[k] !== after[k]) slot.querySelector(map[k])?.classList.add("fresh");
       } else slot.querySelector(".pcard")?.classList.add("arrive");
       mini();
-      $("bnote").textContent = ready ? "yours to edit" : "fills in as you talk";
-      if (ready) { opts.hidden = false; $("namebox").hidden = !pitch.name; paintName(); }
-    } catch (_) {
-      $("bnote").textContent = card ? "fills in as you talk" : "the card will try again after your next answer";
-    } finally {
+    } catch (_) {}
+    finally {
+      if (ready && card) editable();
+      else $("bnote").textContent = card ? "fills in as you talk" : "the card will try again after your next answer";
       drawing = false;
       if (finalWanted) { finalWanted = false; draw(true); }
     }
+  };
+  // Ready: whatever card is showing becomes the visitor's to edit, even if the last redraw didn't come back.
+  const editable = () => {
+    slot.querySelectorAll("[data-f]").forEach((e) => { e.contentEditable = "plaintext-only"; e.spellcheck = true; });
+    $("bnote").textContent = "yours to edit";
+    opts.hidden = false; $("namebox").hidden = !pitch.name; paintName();
   };
   const mini = () => {
     if (!card) return;

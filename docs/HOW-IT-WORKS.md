@@ -37,8 +37,24 @@ hit, the chat points to the form. The AI's thinking is set to "low" (faster and 
 on this model) and a reply that runs on is retried. A $5/month budget alert on Vertex AI
 and the Gemini API emails Mike at 50, 90 and 100 percent.
 
-**The pitch card.** When the summary shows up for a real pitch (not a site idea), the
-AI also draws the idea as an App Store style listing: a made-up product name, a one-line
+**How the chat looks and waits.** The chat is a dark panel with the idea drawn beside it
+(on a phone, a small card bar above the chat that opens to the full card). Before anyone
+types it offers four starter prompts. The bot's reply streams in as the AI writes it
+(`web/gemini.py` `stream_json`, sent to the page as server-sent events), so on a normal day
+the first words show in a couple of seconds. While it waits, the page says what's going on:
+"Reading your idea…", then "Thinking of a good question…", then after 15 seconds "The AI is
+slow right now. Still working…" with a live count; after 30 seconds it offers "Keep waiting"
+or "Finish with the form", and the form fills itself in with what was already said (kept in
+that browser tab only). The three questions with fixed answers (app or website, who it's
+for, who pays) are buttons. The AI asks the first one after the visitor types; after a tap,
+the page asks the next one itself, with no AI wait. Small tags ("booking", "payments") appear
+under each message right away, picked out by the page's own code. A microphone button uses
+the browser's own speech-to-text where there is one. A wave across the top fills as the
+pitch takes shape (what it is, type, for, who pays, features).
+
+**The pitch card.** As the visitor talks (after their first answer, then every couple of
+answers, and once more when the summary is ready), the AI draws the idea as an App Store
+style listing beside the chat; changed parts glow briefly: a made-up product name, a one-line
 tagline, three features, an icon, and the app's main screen on a phone with believable
 sample content (`web/card.py`; its instructions are plain words in `content/card.md`). The
 AI only writes words and picks from fixed lists (96 Lucide line icons in
@@ -52,7 +68,7 @@ id and the visitor lands on its own page, `/idea/<id>`, with Share, Save the ima
 told to skip it. `/idea/<id>.png` is the 1200 x 630 picture that link previews show (X,
 LinkedIn, iMessage), drawn on the server with Pillow to match the page. If the card fails
 the check, the pitch still reaches Mike with the card attached, but there's no page. Limits:
-8 cards per visitor per day, 300 site-wide. Icon masks for the picture are made by
+20 card drawings per visitor per day, 600 site-wide (it redraws as they talk). Icon masks for the picture are made by
 `brand/build_card_icons.py` (run it after adding an icon).
 
 **The form** (`/pitch/form`) saves each pitch to Firestore (database `mikeadamsnc`, collection `pitches`).

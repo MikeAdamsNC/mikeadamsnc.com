@@ -1,32 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Pitch an idea · MikeAdamsNC{% endblock %}
-{% block description %}Got an idea you want built? Talk it through, and Mike reads every one.{% endblock %}
+{% block description %}Got an idea you want built? Talk it through, watch it turn into an app listing, and Mike reads every one.{% endblock %}
 {% block main %}
-<section class="wrap narrow chatpage">
+<section class="wrap pitchpage">
   <div class="mono label">Pitch an idea</div>
   <h1>{{ site.pitch_title }}</h1>
-  <p class="lede">Talk it through with my AI. It asks a few questions and writes it up for me. I read every one. <a href="/pitch/form" class="inline">Prefer a form?</a></p>
-  <div class="chat" id="chat" data-x="PITCH BOT|Gemini 3.8 Flash on Vertex AI · nothing is saved until you send the summary · rules in content/bot.md">
-    <div class="msgs" id="msgs" aria-live="polite"><div class="bub bot">{{ greeting }}</div></div>
-    <div class="summary" id="summary" hidden>
-      <div class="cardbox" id="cardbox" hidden>
-        <div class="mono">Your idea, as an app listing</div>
-        <div id="cardslot"></div>
-        <div class="card-opts"><span class="fine">Tap any words on the card to change them.</span>
-          <label class="fine" id="namebox" hidden><input type="checkbox" id="showname"> Put my first name on it</label>
-          <button class="btn b2 small" id="again" type="button">Try another</button></div>
+  <p class="lede">Talk it through. Your idea turns into an app listing as you go. I read every one. <a href="/pitch/form" class="inline" id="toform">Prefer a form?</a></p>
+  <div class="pgrid">
+    <div class="pchat" id="chat" data-x="PITCH BOT|Gemini 3.8 Flash on Vertex AI, streamed as it writes · buttons are asked by our own code, no AI wait · nothing is saved until you send · rules in content/bot.md">
+      <div class="prog" aria-hidden="true">
+        <svg class="wave" viewBox="0 0 400 8" preserveAspectRatio="none"><path class="w0" d="M0 4 Q10 0 20 4 T40 4 T60 4 T80 4 T100 4 T120 4 T140 4 T160 4 T180 4 T200 4 T220 4 T240 4 T260 4 T280 4 T300 4 T320 4 T340 4 T360 4 T380 4 T400 4"/><path class="w1" id="wave" pathLength="100" d="M0 4 Q10 0 20 4 T40 4 T60 4 T80 4 T100 4 T120 4 T140 4 T160 4 T180 4 T200 4 T220 4 T240 4 T260 4 T280 4 T300 4 T320 4 T340 4 T360 4 T380 4 T400 4"/></svg>
+        <span id="step"><b>0 of 5</b></span>
       </div>
-      <div class="mono">Your pitch</div>
-      <dl id="sumlist"></dl>
-      <div class="sum-btns"><button class="btn b1" id="send" type="button">Send it to Mike</button><button class="btn b2" id="keep" type="button">Keep talking</button></div>
+      <div class="pmsgs" id="msgs" aria-live="polite">
+        <div class="prow fb"><div class="av" aria-hidden="true">λ</div><div class="pbub">{{ greeting }}</div></div>
+        <div class="pwhy" id="startwhy">tap one to start, or type your own</div>
+        <div class="starters" id="starters">
+          <button type="button">Something for my business</button>
+          <button type="button">An app for my family</button>
+          <button type="button">Fix something that bugs me</button>
+          <button type="button">An idea for this site</button>
+        </div>
+      </div>
+      <div class="psum" id="summary" hidden>
+        <div class="mono">Your pitch</div>
+        <dl id="sumlist"></dl>
+        <div class="sum-btns"><button class="pbtn hot" id="send" type="button">Send it to Mike</button><button class="pbtn" id="keep" type="button">Keep talking</button></div>
+      </div>
+      <form class="pcomposer" id="composer" autocomplete="off">
+        <textarea id="say" rows="1" maxlength="1500" placeholder="Type your idea…" aria-label="Your message" required></textarea>
+        <button class="mic" id="mic" type="button" aria-label="Talk instead of typing" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/></svg></button>
+        <button class="pbtn hot" type="submit" id="go">Send</button>
+      </form>
+      <p class="pfine">An AI, not Mike. It won't promise anything; Mike decides. Don't share passwords or payment details. <a href="/privacy">Privacy</a></p>
     </div>
-    <form class="composer" id="composer" autocomplete="off">
-      <textarea id="say" rows="1" maxlength="1500" placeholder="Type your idea…" aria-label="Your message" required></textarea>
-      <button class="btn b1" type="submit" id="go">Send</button>
-    </form>
-    <p class="fine chatnote">This is an AI, not Mike. It won't promise anything; Mike decides. Don't share passwords or payment details. <a href="/privacy">Privacy</a></p>
+
+    <aside class="pbuild" id="build" aria-label="Your idea as an app listing">
+      <div class="bcap"><span class="mono label">Your idea, taking shape</span><span class="mono dim" id="bnote">fills in as you talk</span></div>
+      <button class="mini" id="mini" type="button" aria-expanded="false" aria-controls="cardslot">
+        <span class="mini-ic" id="miniic"><i class="sk"></i></span>
+        <span class="mini-t"><b id="mininame"><i class="sk" style="width:110px"></i></b><small id="minilabel">Your idea</small><em id="minitag">Starts filling in after your first answer.</em></span>
+        <span class="mini-open mono">see it ↗</span>
+      </button>
+      <div id="cardslot" class="cardslot">
+        <div class="pcard ghost">
+          <div class="pc-l">
+            <div class="pc-hd"><div class="pc-ic sk"></div><div><div class="pc-name sk" style="width:200px">&nbsp;</div><div class="pc-kind" id="ghostkind">Your idea</div></div></div>
+            <p class="pc-tag sk" style="width:90%">&nbsp;</p>
+            <ul class="pc-feat">{% for w in [220, 190, 240] %}<li><i class="sk"></i><span class="sk" style="width:{{ w }}px">&nbsp;</span></li>{% endfor %}</ul>
+            <div class="pc-by mono">pitched on <b>MikeAdamsNC.com</b></div>
+          </div>
+          <div class="pc-r"><div class="pc-phone"><div class="ps-t sk" style="width:90px">&nbsp;</div><div class="ps-hero sk"></div><div class="ps-row sk"></div><div class="ps-row sk"></div><div class="ps-row sk"></div></div></div>
+        </div>
+      </div>
+      <div class="card-opts" id="cardopts" hidden><span class="fine">Tap any words on the card to change them.</span>
+        <label class="fine" id="namebox" hidden><input type="checkbox" id="showname"> Put my first name on it</label>
+        <button class="btn b2 small" id="again" type="button">Try another</button></div>
+    </aside>
   </div>
   <noscript><p class="err">The chat needs JavaScript. <a href="/pitch/form">Use the form instead</a>.</p></noscript>
 </section>
+<script id="chipdata" type="application/json">{{ chips|tojson }}</script>
 <script src="/static/chat.js" defer></script>
 {% endblock %}

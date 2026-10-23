@@ -115,10 +115,10 @@ def make(pitch: dict) -> dict:
     facts = "\n".join(f"{k}: {pitch[k]}" for k in ("what", "kind", "purpose", "features", "marketing") if pitch.get(k))
     system = RULES.read_text().split("---", 1)[1].strip() + "\n\nIcons: " + ", ".join(ICONS)
     last = None
-    for _ in range(2):  # now and then an answer hangs; a second try usually comes right back
+    for _ in range(2):  # now and then an answer hangs; a second try (after 12s) usually comes right back
         try:
             out = gemini.json_reply([{"role": "user", "parts": [{"text": "The pitch:\n" + facts}]}], system=system,
-                                    schema=SCHEMA, max_tokens=1200, temperature=0.5, timeout=25)
+                                    schema=SCHEMA, max_tokens=1200, temperature=0.5, timeout=12, think=False)
             break
         except Exception as e:
             last = e

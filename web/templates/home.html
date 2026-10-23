@@ -4,7 +4,8 @@
   <div class="hero-text">
     <h1 data-x="HEADLINE|Written with Mike · lives in content/site.yaml">{{ site.headline }}</h1>
     <p class="lede">{{ site.lede }}</p>
-    <div class="btns"><a class="btn b1" href="#projects" data-cta="see_projects">See the projects</a><a class="btn b2" href="/pitch" data-cta="hero_pitch">Pitch an idea</a></div>
+    <div class="btns"><a class="btn b1" href="#projects" data-cta="see_projects">See the projects</a><a class="btn b2" href="/pitch" data-cta="hero_pitch">Pitch an idea</a><button class="btn b3" type="button" data-xray aria-pressed="false" data-x="X-RAY|You found it · tap again (or press X) to turn it off"><b>λ</b> X-ray this page</button></div>
+    <p class="hint">Every part of this page explains how it was built. Tap X-ray<span class="key"> or press <kbd>X</kbd></span>.</p>
   </div>
   <div class="console" data-x="THE LAB|{% if lab %}Live from Archer, sent {{ lab.age_min }} min ago · grill shown 2 hours late · photo has every trail cam detail removed{% else %}What Mike is playing with · live signals from home when Archer is sending{% endif %}">
     <div class="ch"><i></i><i></i><i></i><b>the lab</b>{% if lab %}<span class="live">● live</span>{% endif %}</div>

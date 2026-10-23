@@ -40,6 +40,12 @@ def test_home_has_real_content(client):
     assert all(str(escape(e["title"])) in r.text for e in content.experiments())
 
 
+def test_home_offers_xray_up_top(client):
+    r = client.get("/").text
+    assert "X-ray this page" in r and "data-xray" in r
+    assert r.index("X-ray this page") < r.index('id="projects"')
+
+
 def test_unknown_pages_are_404_with_the_site_look(client):
     r = client.get("/lab/nope")
     assert r.status_code == 404 and "doesn't exist. Yet." in r.text

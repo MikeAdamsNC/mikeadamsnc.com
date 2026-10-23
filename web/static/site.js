@@ -7,7 +7,8 @@
   };
 
   // X-ray: outline every part that explains itself (data-x="LABEL|what it is").
-  const btn = document.querySelector(".lam");
+  // The corner λ and the home page's hero button ([data-xray]) both switch it.
+  const btns = document.querySelectorAll(".lam, [data-xray]");
   const draw = () => {
     document.querySelectorAll(".xr").forEach((e) => e.remove());
     if (!document.body.classList.contains("xray")) return;
@@ -28,12 +29,12 @@
   };
   const toggle = () => {
     const on = document.body.classList.toggle("xray");
-    btn.setAttribute("aria-pressed", on);
+    btns.forEach((b) => b.setAttribute("aria-pressed", on));
     document.querySelector(".xside").setAttribute("aria-hidden", !on);
     draw();
     send(on ? "xray_open" : "xray_close");
   };
-  btn?.addEventListener("click", toggle);
+  btns.forEach((b) => b.addEventListener("click", () => { if (b.dataset.xray !== undefined) send("cta", { detail: "hero_xray" }); toggle(); }));
   addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "x" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !e.metaKey && !e.ctrlKey) toggle();
   });

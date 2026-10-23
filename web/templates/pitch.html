@@ -28,4 +28,15 @@
     <p class="fine">I'll only use your email to reply about this idea. <a href="/privacy">Privacy</a>.</p>
   </form>
 </section>
+<script>
+/* Coming from the chat: fill in what was already said (kept in this tab only), then forget it. */
+(() => {
+  let d = null;
+  try { d = JSON.parse(sessionStorage.getItem("pitch-draft") || "null"); sessionStorage.removeItem("pitch-draft"); } catch (_) {}
+  if (!d) return;
+  const f = document.querySelector("form.form");
+  for (const k of ["what", "features", "marketing", "name", "email"]) if (d[k] && !f.elements[k].value) f.elements[k].value = d[k];
+  for (const k of ["kind", "purpose", "payment"]) { const r = d[k] && f.querySelector(`input[name="${k}"][value="${CSS.escape(d[k])}"]`); if (r) r.checked = true; }
+})();
+</script>
 {% endblock %}

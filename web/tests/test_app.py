@@ -1,3 +1,4 @@
+import json
 import time
 
 import pytest
@@ -274,12 +275,26 @@ def test_login_only_returns_to_this_site(client):
 from web import bot  # noqa: E402
 
 
+def events(r):
+    return [json.loads(line[5:]) for line in r.text.split("\n\n") if line.startswith("data:")]
+
+
+def turn(client, history):
+    """One streamed reply: the last event ("done" or "down"), with the pieces it streamed."""
+    evs = events(client.post("/pitch/chat", json={"messages": history}))
+    out = evs[-1]
+    out["streamed"] = "".join(e["text"] for e in evs if e["t"] == "delta")
+    if out["t"] == "down":
+        out["down"] = True
+    return out
+
+
 def chat(client, *said):
     history = []
     out = None
     for text in said:
         history.append({"role": "user", "text": text})
-        out = client.post("/pitch/chat", json={"messages": history}).json()
+        out = turn(client, history)
         history.append({"role": "bot", "text": out["reply"]})
     return out, history
 
@@ -291,7 +306,8 @@ def test_chat_page_greets_and_offers_the_form(client):
 
 def test_chat_asks_then_wraps_up_with_a_summary(client):
     out, _ = chat(client, "An app that finds food trucks near me.")
-    assert out["ready"] is False
+    assert out["ready"] is False and out["pitch"]["what"]               # the page asks the button questions next
+    assert out["streamed"].strip() == out["reply"]                      # the reply arrived in pieces
     out, history = chat(client, "An app that finds food trucks near me.", "It's an app, for selling")
     assert out["ready"] is True and out["pitch"]["what"] == "An app that finds food trucks near me."
     assert out["pitch"]["kind"] == "App"
@@ -314,15 +330,16 @@ def test_a_summary_without_a_real_idea_is_refused(client):
 def test_chat_limit_per_visitor(client):
     for _ in range(30):
         client.post("/pitch/chat", json={"messages": [{"role": "user", "text": "hello there"}]})
-    out = client.post("/pitch/chat", json={"messages": [{"role": "user", "text": "hello there"}]}).json()
+    out = turn(client, [{"role": "user", "text": "hello there"}])
     assert out.get("down") and "form" in out["reply"]
 
 
 def test_bot_trouble_points_to_the_form(client, monkeypatch):
     def broken(messages):
         raise bot.Unavailable
-    monkeypatch.setattr(bot, "turn", broken)
-    out = client.post("/pitch/chat", json={"messages": [{"role": "user", "text": "an idea"}]}).json()
+        yield
+    monkeypatch.setattr(bot, "stream", broken)
+    out = turn(client, [{"role": "user", "text": "an idea"}])
     assert out["down"] and "form" in out["reply"]
 
 
@@ -486,7 +503,7 @@ def test_a_bad_pick_index_is_ignored(client):
 def card_for(client, **send):
     out, history = chat(client, "An app that finds food trucks near me.", "an app")
     pitch = {**out["pitch"], "name": "Jordan Lee"}
-    made = client.post("/pitch/card", json={"pitch": pitch})
+    made = client.post("/pitch/card", json={"pitch": pitch, "editable": True})
     assert made.status_code == 200 and 'class="pcard"' in made.json()["html"] and "contenteditable" in made.json()["html"]
     c = made.json()["card"]
     return client.post("/pitch/chat/send", json={"pitch": pitch, "messages": history, "card": c, **send}), c
@@ -533,3 +550,21 @@ def test_card_tidy_keeps_it_drawable():
     assert len(c["name"]) <= card.LIMITS["name"] and c["icon"] == "lightbulb" and len(c["features"]) == 3
     assert c["screen"]["hero"] == "list" and len(c["screen"]["rows"]) == 5
     assert card.label({"kind": "App", "purpose": "Business"}) == "App · for a business" and card.label({}) == "Idea"
+
+
+def test_chat_page_has_buttons_starters_and_the_card_panel(client):
+    r = client.get("/pitch").text
+    assert 'id="starters"' in r and 'id="cardslot"' in r and 'id="chipdata"' in r
+    assert "How would Mike fit in?" in r     # the button questions ride along with the page
+
+
+def test_partial_reply_reads_a_half_written_answer():
+    assert bot.partial_reply('{"reply":"Hi th') == "Hi th"
+    assert bot.partial_reply('{"reply":"a\\nb \\"q\\" \\u00e9","chips') == 'a\nb "q" é'
+    assert bot.partial_reply('{"reply":"tail\\') == "tail" and bot.partial_reply('{"rep') == ""
+
+
+def test_card_is_editable_only_when_asked(client):
+    pitch = {"type": "pitch", "what": "An app that finds food trucks near me."}
+    assert "contenteditable" not in client.post("/pitch/card", json={"pitch": pitch}).json()["html"]
+    assert "contenteditable" in client.post("/pitch/card", json={"pitch": pitch, "editable": True}).json()["html"]

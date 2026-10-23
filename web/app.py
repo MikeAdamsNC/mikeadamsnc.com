@@ -13,7 +13,7 @@ import pathlib
 import time
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -259,11 +259,13 @@ def project(request: Request, slug: str):
 
 @app.get("/pitch")
 def pitch_chat(request: Request):
-    return page(request, "chat.html", greeting=bot.GREETING)
+    return page(request, "chat.html", greeting=bot.GREETING, chips=bot.CHIPS)
 
 
 @app.post("/pitch/chat")
 async def chat_turn(request: Request):
+    """One bot reply, streamed to the page as server-sent events: "delta" pieces of the reply as
+    the AI writes it, then "done" with the whole answer (or "down" if the AI or a limit is out)."""
     try:
         messages = bot.clean((await request.json()).get("messages", []))
     except Exception:
@@ -273,18 +275,27 @@ async def chat_turn(request: Request):
         raise HTTPException(403)
     vid = visitor(request)
     day = clock.today()
-    if store.bump(f"chat-{vid}-{day}") > 30 or store.bump(f"chat-all-{day}") > 600:
-        return {"reply": "That's all the chatting I can do today. The form still works, and Mike reads those too.",
-                "ready": False, "down": True}
     users = sum(1 for m in messages if m["role"] == "user")
-    try:
-        out = bot.turn(messages)
-    except bot.Unavailable:
-        return {"reply": "My brain is offline for a moment. The form works right now, and Mike reads those too.",
-                "ready": False, "down": True}
-    recorder.record(analytics.row("chat_start" if users <= 1 else "chat_message", path="/pitch", visitor=vid,
-                                  device=device, browser=browser, value=float(users), detail="ready" if out["ready"] else ""))
-    return out
+
+    def event(d: dict) -> str:
+        return "data: " + json.dumps(d) + "\n\n"
+
+    def run():
+        if store.bump(f"chat-{vid}-{day}") > 30 or store.bump(f"chat-all-{day}") > 600:
+            yield event({"t": "down", "reply": "That's all the chatting I can do today. The form still works, and Mike reads those too."})
+            return
+        try:
+            for kind, data in bot.stream(messages):
+                if kind == "delta":
+                    yield event({"t": "delta", "text": data})
+                else:
+                    recorder.record(analytics.row("chat_start" if users <= 1 else "chat_message", path="/pitch", visitor=vid,
+                                                  device=device, browser=browser, value=float(users), detail="ready" if data["ready"] else ""))
+                    yield event({"t": "done", **data})
+        except bot.Unavailable:
+            yield event({"t": "down", "reply": "My brain is offline for a moment. The form works right now, and Mike reads those too."})
+
+    return StreamingResponse(run(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.post("/pitch/chat/send")
@@ -321,21 +332,22 @@ async def chat_send(request: Request):
 async def pitch_card(request: Request):
     """Draft the visitor's pitch card. Nothing is saved until they send the pitch."""
     try:
-        pitch = bot.tidy((await request.json()).get("pitch"))
+        data = await request.json()
+        pitch = bot.tidy(data.get("pitch"))
     except Exception:
         raise HTTPException(400)
     device, _, is_bot = analytics.describe(request.headers.get("user-agent", ""))
     if is_bot or pitch["type"] != "pitch" or len(pitch["what"]) < 10:
         raise HTTPException(400)
     vid, day = visitor(request), clock.today()
-    if store.bump(f"card-{vid}-{day}") > 8 or store.bump(f"card-all-{day}") > 300:
+    if store.bump(f"card-{vid}-{day}") > 20 or store.bump(f"card-all-{day}") > 600:  # the card redraws as they talk
         raise HTTPException(429)
     try:
         made = card.make(pitch)
     except card.Unavailable:
         raise HTTPException(503)
     recorder.record(analytics.row("card_made", path="/pitch", visitor=vid, device=device))
-    html = templates.env.get_template("_card.html").render(c=made, label=card.label(pitch), by="", editable=True)
+    html = templates.env.get_template("_card.html").render(c=made, label=card.label(pitch), by="", editable=bool(data.get("editable")))
     return {"card": made, "html": html}
 
 

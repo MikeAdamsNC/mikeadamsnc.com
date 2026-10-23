@@ -15,7 +15,7 @@
     <div><h4>What happened</h4><p>{{ e.result }}</p></div>
     <div class="vbox v-{{ e.verdict }}"><h4>Verdict: {{ e.verdict_label }}</h4><p>{{ e.verdict_line }}</p></div>
   </div>
-  <section class="comments" id="comments" data-x="COMMENTS|Sign in with Google · an AI checks each one first (Gemini 3.8 Flash) · Mike can remove anything">
+  <section class="comments" id="comments" data-x="COMMENTS|Sign in with Google · an AI checks each one first (Gemini 3.5 Flash) · Mike can remove anything">
     <h2>Comments <span class="mono">{{ comments|length }}</span></h2>
     {% for c in comments %}
     <div class="cm"><div class="cm-top"><b>{{ c.name }}</b><span class="mono">{{ c.created_at[:10] }}</span></div><p>{{ c.text }}</p></div>

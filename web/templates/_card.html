@@ -1,6 +1,6 @@
 {# The pitch card: an App Store style listing with the app's main screen. editable = the visitor can fix the words. #}
 {% set ed = ' contenteditable="plaintext-only" spellcheck="true"' if editable else '' %}
-<div class="pcard" data-x="PITCH CARD|Words by Gemini 3.8 Flash from the pitch · icon and screen picked from fixed lists · drawn by our own code">
+<div class="pcard" data-x="PITCH CARD|Words by Gemini 3.5 Flash from the pitch · icon and screen picked from fixed lists · drawn by our own code">
   <div class="pc-l">
     <div class="pc-hd"><div class="pc-ic">{{ icon_svg(c.icon)|safe }}</div>
       <div><h2 class="pc-name" data-f="name"{{ ed|safe }}>{{ c.name }}</h2><div class="pc-kind">{{ label }}</div></div></div>

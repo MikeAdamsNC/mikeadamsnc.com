@@ -1,4 +1,4 @@
-"""The AI check every comment (and every shared pitch card) gets before it posts (Gemini 3.8 Flash on Vertex AI).
+"""The AI check every comment (and every shared pitch card) gets before it posts (Gemini 3.5 Flash on Vertex AI).
 
 "ok" posts at once; "hold" waits for Mike on the dashboard. If the AI can't be reached,
 the comment is held, never posted unchecked.

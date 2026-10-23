@@ -111,7 +111,7 @@ def home(request: Request, v: str = "classic"):
         return page(request, f"v_{v}.html", version=v, versions=versions.all(), projects=content.projects(),
                     experiments=content.experiments())
     tallies = safe_tallies()
-    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic", lab=live_lab(), reading=safe_reading(5),
+    return page(request, "home.html", projects=content.projects(), tallies=tallies, version="classic", lab=live_lab(), reading=safe_reading(6),
                 experiments=ranking.order(content.experiments(), tallies, "hot"))
 
 

@@ -19,27 +19,28 @@ GREETING = ("Hi! I'm an AI that helps Mike collect ideas. He reads every one him
 KINDS = ["App", "Website", "Something else", "Not sure", ""]
 PURPOSES = ["Personal use", "Business", "Something to sell", "Not sure", ""]
 PAY = ["I'd pay you to build it", "Split what it earns", "Free, I just want it to exist", "Not sure", ""]
+FIELDS = ["what", "kind", "purpose", "payment", "features", "marketing", "name", "email"]
+# Flat on purpose: with the pitch as a nested object, 3.8 Flash often ran on inside it until it
+# hit its length limit (the same thing happened with the card).
 SCHEMA = {
     "type": "OBJECT",
     "properties": {
         "reply": {"type": "STRING"},
         "chips": {"type": "STRING", "enum": ["kind", "purpose", "payment", "none"]},
         "ready": {"type": "BOOLEAN"},
-        "pitch": {"type": "OBJECT", "properties": {
-            "type": {"type": "STRING", "enum": ["pitch", "site idea"]},
-            "what": {"type": "STRING"},
-            "kind": {"type": "STRING", "enum": [k for k in KINDS if k]},
-            "purpose": {"type": "STRING", "enum": [k for k in PURPOSES if k]},
-            "payment": {"type": "STRING", "enum": [k for k in PAY if k]},
-            "features": {"type": "STRING"},
-            "marketing": {"type": "STRING"},
-            "name": {"type": "STRING"},
-            "email": {"type": "STRING"},
-        }},
+        "type": {"type": "STRING", "enum": ["pitch", "site idea"]},
+        "what": {"type": "STRING"},
+        "kind": {"type": "STRING", "enum": [k for k in KINDS if k] + ["unknown"]},
+        "purpose": {"type": "STRING", "enum": [k for k in PURPOSES if k] + ["unknown"]},
+        "payment": {"type": "STRING", "enum": [k for k in PAY if k] + ["unknown"]},
+        "features": {"type": "STRING"},
+        "marketing": {"type": "STRING"},
+        "name": {"type": "STRING"},
+        "email": {"type": "STRING"},
     },
-    "required": ["reply", "chips", "ready"],
-    "propertyOrdering": ["reply", "chips", "ready", "pitch"],  # reply first, so it can stream to the page
-}
+    "required": ["reply", "chips", "ready", "type", "what", "kind", "purpose", "payment"],
+    "propertyOrdering": ["reply", "chips", "ready", "type", "what", "kind", "purpose", "payment", "features", "marketing", "name", "email"],
+}  # reply first, so it can stream to the page
 # The questions with fixed answers are buttons. The page asks the next one itself (no AI wait)
 # after a button is tapped; the AI asks one only right after the visitor types.
 CHIPS = {
@@ -127,7 +128,8 @@ def partial_reply(buf: str) -> str:
 def _finish(out: dict) -> dict:
     reply = str(out.get("reply", "")).strip()[:1200] or "Tell me a bit more?"
     chips = out.get("chips") if out.get("chips") in CHIPS else None
-    return {"reply": reply, "ready": bool(out.get("ready")), "chips": chips, "pitch": tidy(out.get("pitch"))}
+    pitch = out.get("pitch") if isinstance(out.get("pitch"), dict) else {k: out.get(k) for k in ["type", *FIELDS]}
+    return {"reply": reply, "ready": bool(out.get("ready")), "chips": chips, "pitch": tidy(pitch)}
 
 
 def stream(messages: list[dict]):
@@ -158,5 +160,7 @@ def stream(messages: list[dict]):
         out = json.loads(buf)
     except Exception as e:
         log.warning("bot unavailable: %s", e)
-        raise Unavailable from e
+        if not said.strip():
+            raise Unavailable from e
+        out = {"reply": said}  # the reply got through; keep it rather than say "offline"
     yield "done", _finish(out)

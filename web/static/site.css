@@ -322,6 +322,7 @@ a.chatbox{display:block}a.chatbox:hover{box-shadow:0 20px 40px -28px rgba(11,22,
 .mini{display:none}
 .cardslot .pcard{grid-template-columns:1fr 236px}.cardslot .pc-l{padding:28px 26px 22px}.cardslot .pc-phone{width:184px;height:372px}
 .cardslot .pc-name{font-size:36px}.cardslot .pc-ic{width:84px;height:84px;border-radius:22px}.cardslot .pc-ic .ico{width:48px;height:48px}
+@container (max-width:540px){.cardslot .pcard{grid-template-columns:1fr}.cardslot .pc-l{padding:24px 22px 22px}.cardslot .pc-name{font-size:32px}.cardslot .pc-ic{width:72px;height:72px;border-radius:18px}.cardslot .pc-ic .ico{width:42px;height:42px}}
 .sk{background:linear-gradient(90deg,#E4ECED 0%,#F1F6F6 50%,#E4ECED 100%);background-size:200% 100%;animation:shimmer 1.6s linear infinite;border-radius:8px;color:transparent}
 @keyframes shimmer{to{background-position:-200% 0}}
 .pcard.ghost .pc-ic.sk{box-shadow:none}.pcard.ghost .pc-feat i.sk{background:#E4ECED}.pcard.ghost .ps-hero{height:118px}.pcard.ghost .ps-row{height:40px}

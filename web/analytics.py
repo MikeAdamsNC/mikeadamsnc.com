@@ -16,7 +16,8 @@ from . import clock
 log = logging.getLogger("analytics")
 TABLE = "macmanager-home.site_analytics.events"
 BOTS = re.compile(r"bot|crawl|spider|slurp|preview|scheduler|monitor|curl|wget|python-|httpx|headless", re.I)
-EVENT_KINDS = {"scroll", "xray_open", "xray_close", "outbound", "pitch_start", "cta", "version_pick", "terminal_command", "card_share"}
+BOT = "bot"  # page_view detail for visitors whose browser says it is a bot
+EVENT_KINDS = {"here", "scroll", "xray_open", "xray_close", "outbound", "pitch_start", "cta", "version_pick", "terminal_command", "card_share"}
 
 
 def visitor_id(salt: bytes, ip: str, ua: str) -> str:
@@ -54,7 +55,8 @@ class MemoryRecorder:
 
     def pages_today(self) -> int:
         today = clock.today()
-        return sum(1 for r in self.rows if r["kind"] == "page_view" and r["ts_eastern"].startswith(today))
+        return sum(1 for r in self.rows if r["kind"] == "page_view" and r.get("detail") != BOT and r.get("status") != 404
+                   and r["ts_eastern"].startswith(today))
 
 
 class BigQueryRecorder:
@@ -87,7 +89,8 @@ class BigQueryRecorder:
         if self._today and self._today[0] == day and time.time() - self._today[1] < 300:
             return self._today[2]
         rows = self.query(
-            f"SELECT COUNT(*) n FROM `{TABLE}` WHERE kind='page_view' AND ts >= TIMESTAMP(@day, 'America/New_York')",
+            f"SELECT COUNT(*) n FROM `{TABLE}` WHERE kind='page_view' AND IFNULL(detail,'')!='{BOT}' AND IFNULL(status,200)!=404"
+            " AND ts >= TIMESTAMP(@day, 'America/New_York')",
             {"day": day},
         )
         n = rows[0]["n"] if rows else 0

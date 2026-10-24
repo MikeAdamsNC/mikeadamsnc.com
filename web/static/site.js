@@ -40,6 +40,12 @@
   });
   addEventListener("resize", draw);
 
+  // "A person is here": sent once per page, on the first real touch, scroll, click, key or
+  // mouse move. Scripts that load pages without using them never send it.
+  const here = () => { HERE.forEach((k) => removeEventListener(k, here, true)); send("here"); };
+  const HERE = ["pointermove", "pointerdown", "touchstart", "keydown", "wheel", "scroll"];
+  HERE.forEach((k) => addEventListener(k, here, { capture: true, passive: true }));
+
   // Scroll depth (25/50/75/100), once each per page view.
   const marks = new Set();
   addEventListener("scroll", () => {

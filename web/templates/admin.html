@@ -6,15 +6,28 @@
   <div class="sec-head"><div><div class="mono label">Private · {{ me }}</div><h1>Dashboard</h1></div>
     <div class="range"><a href="/admin?days=7" class="{{ 'on' if days == 7 }}">7 days</a><a href="/admin?days=30" class="{{ 'on' if days == 30 }}">30 days</a><a href="/admin/logout">Sign out</a></div></div>
   <div class="tiles">
-    <div><b>{{ s.views or 0 }}</b><span>page views</span></div>
-    <div><b>{{ s.visitor_days or 0 }}</b><span>visitors (per day)</span></div>
+    <div><b>{{ s.views or 0 }}</b><span>page views by people</span></div>
+    <div><b>{{ s.visitor_days or 0 }}</b><span>people (per day)</span></div>
     <div><b>{{ pitches|selectattr('status','equalto','new')|list|length }}</b><span>new pitches</span></div>
     <div><b>{{ s.xray or 0 }}</b><span>X-ray opens</span></div>
     <div><b>{{ s.votes or 0 }}</b><span>votes</span></div>
     <div><b>{{ held|length }}</b><span>comments held</span></div>
   </div>
+  {% set g = stats.groups %}
+  <div class="panel" id="traffic"><h3>Who's visiting</h3>
+    <p class="fine">Everything on this page counts people only. Each visitor is sorted once a day.</p>
+    {% for key, name, what in [
+      ("person", "People", "touched, scrolled, clicked, typed, voted, chatted or pitched"),
+      ("unseen", "Unconfirmed", "loaded pages and never touched them: quiet scripts, or someone who left right away"),
+      ("scanner", "Scanners", "went looking for pages that don't exist, like hidden password files"),
+      ("bot", "Bots that say so", "search engines and AI crawlers")] %}
+    {% set r = g.get(key, {}) %}
+    <div class="kv" title="{{ what }}"><span>{{ name }} <small class="fine">· {{ what }}</small></span><b>{{ r.views or 0 }} views · {{ r.visitors or 0 }}</b></div>
+    {% endfor %}
+    {% if stats.scanned %}<p class="fine" style="margin-top:10px">Most-scanned: {% for r in stats.scanned %}{{ r.path }} ({{ r.hits }}){{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  </div>
   {% set top = (stats.daily|map(attribute='views')|max) if stats.daily else 1 %}
-  <div class="panel"><h3>Views by day</h3><div class="bars">{% for d in stats.daily %}<div title="{{ d.day }}: {{ d.views }} views, {{ d.visitors }} visitors"><i style="height:{{ (d.views / top * 100)|round }}%"></i><span>{{ d.day[5:] }}</span></div>{% else %}<p class="fine">No visits yet.</p>{% endfor %}</div></div>
+  <div class="panel"><h3>Views by day (people)</h3><div class="bars">{% for d in stats.daily %}<div title="{{ d.day }}: {{ d.views }} views, {{ d.visitors }} visitors"><i style="height:{{ (d.views / top * 100)|round }}%"></i><span>{{ d.day[5:] }}</span></div>{% else %}<p class="fine">No visits yet.</p>{% endfor %}</div></div>
   <div class="cols">
     <div class="panel"><h3>Top pages</h3>{% for r in stats.pages %}<div class="kv"><span>{{ r.path }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>
     <div class="panel"><h3>Where visitors came from</h3>{% for r in stats.referrers %}<div class="kv"><span>{{ r.source }}</span><b>{{ r.views }}</b></div>{% else %}<p class="fine">Nothing yet.</p>{% endfor %}</div>

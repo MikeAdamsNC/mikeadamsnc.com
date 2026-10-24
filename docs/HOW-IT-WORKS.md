@@ -135,15 +135,29 @@ collections `reading` and `reading_skipped`, pruned after 14 days.
 
 Every page view is recorded by the server, along with votes, comments and sign-ins; the
 page's script adds scroll depth (25, 50, 75, 100%), X-ray opens, buttons pressed, links
-clicked out, and the first keystroke in the idea form. Rows go to BigQuery table `site_analytics.events`. Bots, the keep-warm
-ping and Mike's private pages aren't counted.
+clicked out, the first keystroke in the idea form, and one "here" signal per page the first
+time someone touches, scrolls, clicks, types or moves the mouse. Rows go to BigQuery table
+`site_analytics.events`. Browsers that say they are bots are recorded but labeled
+(`detail = 'bot'`); the keep-warm ping and Mike's private pages aren't recorded.
 
 A visitor is a 16-character code made from the day's random salt (Firestore `salts`,
 one per Eastern day, deleted after two days), the IP address and the browser. The same
 person is one visitor today and a stranger tomorrow; IP addresses are never stored.
 
 The dashboard reads the same table: views, visitors, pages, where people came from,
-devices, scroll depth, the pitch funnel, experiments read, links clicked out.
+devices, scroll depth, the pitch funnel, experiments read, links clicked out. All of those
+count **people only**. Each visitor is sorted once a day (`web/dashboard.py`), first match wins:
+
+| Group | Means |
+|---|---|
+| Bots that say so | the browser called itself a bot (search engines, AI crawlers, curl) |
+| People | did something only a person does: the "here" signal, scroll, X-ray, vote, chat, pitch, comment |
+| Scanners | asked for pages that don't exist, like `/.env` or `/.git/config` (automated hunts for leaked passwords) |
+| Unconfirmed | loaded pages and never touched them: quiet scripts, plus a few people who left right away |
+
+The "Who's visiting" panel shows all four, plus the most-scanned paths. On 2026-10-24 about
+nine in ten recorded page views were scanners. Days before the "here" signal existed count
+fewer people than were really there (only scrolls and taps on buttons proved a person then).
 
 ## Site versions
 

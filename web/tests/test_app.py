@@ -59,11 +59,45 @@ def test_page_views_are_recorded_without_cookies(client):
     assert v["device"] == "phone" and v["referrer_host"] == "news.ycombinator.com" and v["visitor"] and v["status"] == 200
 
 
-def test_bots_and_assets_are_not_counted(client):
-    client.get("/", headers={"user-agent": "Googlebot/2.1"})
+def test_assets_are_not_counted_and_bots_are_labeled(client):
     client.get("/health")
     client.get("/static/site.css")
     assert views() == []
+    client.get("/", headers={"user-agent": "Googlebot/2.1"})
+    assert [v["detail"] for v in views()] == ["bot"]
+    client.get("/")
+    assert [v["detail"] for v in views()] == ["bot", None]
+    assert site.recorder.pages_today() == 1
+
+
+def test_scanner_misses_are_recorded_but_not_counted_today(client):
+    client.get("/.env")
+    assert [(v["path"], v["status"]) for v in views()] == [("/.env", 404)]
+    assert site.recorder.pages_today() == 0
+
+
+def test_a_person_signal_is_accepted(client):
+    assert client.post("/e", json={"kind": "here", "path": "/"}).json() == {"ok": True}
+    assert [r["kind"] for r in site.recorder.rows] == ["here"]
+
+
+def test_dashboard_counts_people_only():
+    from web import dashboard
+
+    class Spy:
+        sql = []
+
+        def query(self, sql, params=None):
+            self.sql.append(sql)
+            return []
+
+    spy = Spy()
+    out = dashboard.stats(spy, 7)
+    assert out["groups"] == {} and out["summary"] == {}
+    body = [s.split("people AS", 1)[1] for s in spy.sql]
+    for name, sql in zip(out, body):
+        if name not in ("groups", "scanned"):
+            assert "FROM people" in sql and "`" not in sql.split(")", 1)[1], name
 
 
 def test_same_browser_same_day_is_one_visitor(client):

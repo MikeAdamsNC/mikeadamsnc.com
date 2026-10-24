@@ -71,14 +71,14 @@ async def measure(request: Request, call_next):
     if request.method == "GET" and not path.startswith(SKIP) and "text/html" in response.headers.get("content-type", ""):
         ua = request.headers.get("user-agent", "")
         device, browser, is_bot = analytics.describe(ua)
-        if not is_bot:
-            try:
-                recorder.record(analytics.row(
-                    "page_view", path=path, visitor=visitor(request), device=device, browser=browser,
-                    referrer_host=analytics.referrer_host(request.headers.get("referer")),
-                    version=request.query_params.get("v", "classic"), server_ms=round(ms, 1), status=response.status_code))
-            except Exception as e:  # analytics must never break a page
-                logging.warning("page_view not recorded: %s", e)
+        try:  # bots that say so are kept but labeled, so the dashboard can count them apart
+            recorder.record(analytics.row(
+                "page_view", path=path, visitor=visitor(request), device=device, browser=browser,
+                referrer_host=analytics.referrer_host(request.headers.get("referer")),
+                version=request.query_params.get("v", "classic"), server_ms=round(ms, 1), status=response.status_code,
+                detail=analytics.BOT if is_bot else None))
+        except Exception as e:  # analytics must never break a page
+            logging.warning("page_view not recorded: %s", e)
     return response
 
 

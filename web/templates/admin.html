@@ -4,7 +4,7 @@
 {% set s = stats.summary %}
 <section class="wrap admin">
   <div class="sec-head"><div><div class="mono label">Private · {{ me }}</div><h1>Dashboard</h1></div>
-    <div class="range"><a href="/admin?days=7" class="{{ 'on' if days == 7 }}">7 days</a><a href="/admin?days=30" class="{{ 'on' if days == 30 }}">30 days</a><a href="/admin/logout">Sign out</a></div></div>
+    <div class="range"><a href="/admin?days=7" class="{{ 'on' if days == 7 }}">7 days</a><a href="/admin?days=30" class="{{ 'on' if days == 30 }}">30 days</a><a href="/admin/logout" rel="nofollow">Sign out</a></div></div>
   <div class="tiles">
     <div><b>{{ s.views or 0 }}</b><span>page views by people</span></div>
     <div><b>{{ s.visitor_days or 0 }}</b><span>people (per day)</span></div>

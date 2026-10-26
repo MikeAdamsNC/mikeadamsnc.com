@@ -607,3 +607,91 @@ def test_card_is_editable_only_when_asked(client):
 def test_styles_and_scripts_carry_a_content_fingerprint(client):
     r = client.get("/pitch").text
     assert '/static/site.css?v=' in r and '/static/chat.js?v=' in r and 'href="/static/site.css"' not in r
+
+
+# ---------- one host, one sitemap ----------
+def test_only_www_and_the_public_run_app_url_redirect():
+    from web.app import wants_canonical_redirect
+    assert wants_canonical_redirect("www.mikeadamsnc.com", "/lab")
+    assert wants_canonical_redirect("WWW.MikeAdamsNC.com:443", "/reading")
+    assert wants_canonical_redirect("mikeadamsnc-656071931218.us-east1.run.app", "/")
+    assert not wants_canonical_redirect("mikeadamsnc.com", "/lab")
+    assert not wants_canonical_redirect("mikeadamsnc.com:443", "/")
+    assert not wants_canonical_redirect("localhost:8000", "/")
+    assert not wants_canonical_redirect("testserver", "/pitch")
+    # a preview (or one revision) lives at tag---service….run.app, and its Google callback is registered there
+    assert not wants_canonical_redirect("preview---mikeadamsnc-656071931218.us-east1.run.app", "/lab")
+    assert not wants_canonical_redirect("mikeadamsnc-656071931218.us-east1.run.app", "/health")
+    assert not wants_canonical_redirect("www.mikeadamsnc.com", "/api/pitches/unsent")
+    assert not wants_canonical_redirect("www.mikeadamsnc.com", "/api/lab")
+    assert not wants_canonical_redirect("www.mikeadamsnc.com", "/auth/callback")
+    assert not wants_canonical_redirect("evil.example", "/")
+
+
+def _host(host: str) -> TestClient:
+    return TestClient(site.app, base_url=f"https://{host}", headers=BROWSER)
+
+
+def test_www_and_run_app_redirect_to_the_apex_keeping_path_and_query(client):
+    for host in ("www.mikeadamsnc.com", "mikeadamsnc-656071931218.us-east1.run.app"):
+        r = _host(host).get("/lab/grill-autopilot?sort=new", follow_redirects=False)
+        assert r.status_code == 301, host
+        assert r.headers["location"] == "https://mikeadamsnc.com/lab/grill-autopilot?sort=new"
+    assert views() == []  # a redirect is not a page view
+    apex = _host("mikeadamsnc.com").get("/lab/grill-autopilot?sort=new")
+    assert apex.status_code == 200
+    assert 'rel="canonical" href="https://mikeadamsnc.com/lab/grill-autopilot"' in apex.text
+
+
+def test_health_api_and_oauth_callback_answer_on_the_cloud_run_url(client, monkeypatch):
+    run = _host("mikeadamsnc-656071931218.us-east1.run.app")
+    assert run.get("/health").status_code == 200 and run.get("/health").text == "ok"
+    monkeypatch.setenv("ARCHER_TOKEN", "t0ken")
+    h = {"authorization": "Bearer t0ken"}
+    assert run.get("/api/pitches/unsent", headers=h).status_code == 200
+    assert run.post("/api/lab", headers=h, json={"off": True}).status_code == 200
+    # Google sends the browser back to whatever host started sign-in; that request must not be bounced
+    assert run.get("/auth/callback", follow_redirects=False).status_code == 400
+    preview = _host("preview---mikeadamsnc-656071931218.us-east1.run.app")
+    assert preview.get("/lab", follow_redirects=False).status_code == 200
+
+
+def test_every_public_page_names_the_apex_as_canonical(client):
+    home = client.get("/?v=terminal").text
+    assert 'rel="canonical" href="https://mikeadamsnc.com/"' in home
+    assert 'rel="canonical" href="https://mikeadamsnc.com/?v=terminal"' not in home
+    for path in ["/", "/lab", "/versions", "/reading", "/pitch", "/pitch/form", "/privacy"]:
+        assert f'rel="canonical" href="https://mikeadamsnc.com{path if path != "/" else "/"}"' in client.get(path).text
+
+
+def test_sitemap_lists_the_public_pages_and_robots_points_at_it(client):
+    import xml.etree.ElementTree as ET
+    xml = client.get("/sitemap.xml")
+    assert xml.status_code == 200 and "xml" in xml.headers["content-type"]
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    locs = [el.text for el in ET.fromstring(xml.text).findall("s:url/s:loc", ns)]
+    expect = ["https://mikeadamsnc.com" + p for p in site.public_paths()]
+    assert locs == expect
+    for blocked in ["/admin", "/pitch/thanks", "/idea/", "/api/", "/login", "/auth/", "/health"]:
+        assert not any(blocked in loc for loc in locs)
+    robots = client.get("/robots.txt").text
+    assert "Sitemap: https://mikeadamsnc.com/sitemap.xml" in robots
+    for rule in ["Disallow: /admin\n", "Disallow: /login\n", "Disallow: /logout\n", "Disallow: /auth/\n", "Disallow: /api/\n"]:
+        assert rule in robots
+    assert "Disallow: /lab" not in robots and "Disallow: /pitch" not in robots and "Disallow: /idea" not in robots
+
+
+def test_thanks_is_noindex_and_sign_in_links_are_nofollow(client, monkeypatch):
+    thanks = client.get("/pitch/thanks").text
+    assert 'name="robots" content="noindex"' in thanks
+    assert 'rel="canonical" href="https://mikeadamsnc.com/pitch/thanks"' in thanks
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "id")
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "secret")
+    page = client.get("/lab/grill-autopilot").text
+    assert 'href="/login?next=/lab/grill-autopilot%23comments" rel="nofollow"' in page
+    client.cookies.set(auth.COOKIE, auth.make_cookie(PERSON))
+    signed = client.get("/lab/grill-autopilot").text
+    assert 'href="/logout?next=/lab/grill-autopilot" rel="nofollow"' in signed
+    monkeypatch.setenv("ADMIN_EMAILS", "mike@example.com")
+    client.cookies.set(auth.COOKIE, auth.make_cookie("mike@example.com"))
+    assert 'href="/admin/logout" rel="nofollow"' in client.get("/admin").text

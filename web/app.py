@@ -12,6 +12,7 @@ import logging
 import os
 import pathlib
 import time
+from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
@@ -45,8 +46,86 @@ templates.env.globals["asset"] = asset
 store = make_store()
 recorder = analytics.make_recorder()
 
-SKIP = ("/static", "/brand", "/lab-photo", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt")
+SKIP = ("/static", "/brand", "/lab-photo", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt", "/sitemap.xml")
 PITCH_KINDS = ["App", "Website", "Something else", "Not sure"]
+CANONICAL_HOST = "mikeadamsnc.com"
+CANONICAL_ORIGIN = "https://mikeadamsnc.com"
+
+
+def bare_host(host: str) -> str:
+    """Hostname only: no port, no trailing dot, lower case."""
+    host = (host or "").strip().lower()
+    if host.startswith("["):
+        end = host.find("]")
+        return host[1:end] if end != -1 else host
+    return host.split(":")[0].rstrip(".")
+
+
+def stays_on_called_host(path: str) -> bool:
+    """Paths that must answer on the host that called them.
+
+    /health is the keep-warm ping (deploy/keep-warm.sh uses the Cloud Run URL).
+    /api/* is Archer, which calls with ARCHER_TOKEN, and the public JSON the
+    terminal and mountains versions read. /auth/callback is where Google sends
+    the browser back; that host is part of the registered redirect URI
+    (the apex, www, and the preview tag URL).
+    """
+    return path == "/health" or path == "/auth/callback" or path == "/api" or path.startswith("/api/")
+
+
+def wants_canonical_redirect(host: str, path: str) -> bool:
+    """www and the public Cloud Run URL 301 to the apex.
+
+    Tagged Cloud Run hosts look like tag---service-….run.app (a preview deploy,
+    or one revision). Those stay put so a preview can be looked at, and so the
+    preview's registered Google sign-in callback still matches.
+    """
+    if stays_on_called_host(path):
+        return False
+    name = bare_host(host)
+    if name == "www." + CANONICAL_HOST:
+        return True
+    return name.endswith(".run.app") and "---" not in name
+
+
+def canonical_url(path: str, query: str = "") -> str:
+    url = f"{CANONICAL_ORIGIN}{path or '/'}"
+    return f"{url}?{query}" if query else url
+
+
+def public_paths() -> list[str]:
+    """Pages worth listing for search. Drawn from the same files the site renders,
+    so a new Lab experiment or project appears here on its own."""
+    paths = ["/", "/lab"]
+    paths += [f"/lab/{e['slug']}" for e in content.experiments()]
+    paths += [f"/projects/{p['slug']}" for p in content.projects()]
+    paths += ["/versions", "/reading", "/pitch", "/pitch/form", "/privacy"]
+    return paths
+
+
+def sitemap_xml() -> str:
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for path in public_paths():
+        lines.append(f"  <url><loc>{xml_escape(CANONICAL_ORIGIN + path)}</loc></url>")
+    lines.append("</urlset>")
+    return "\n".join(lines) + "\n"
+
+
+def robots_txt() -> str:
+    return (
+        "User-agent: *\n"
+        "Disallow: /admin\n"
+        "Disallow: /login\n"
+        "Disallow: /logout\n"
+        "Disallow: /auth/\n"
+        "Disallow: /api/\n"
+        f"\nSitemap: {CANONICAL_ORIGIN}/sitemap.xml\n"
+    )
+
+
 PITCH_PURPOSES = ["Personal use", "Business", "Something to sell", "Not sure"]
 PITCH_PAY = ["I'd pay you to build it", "Split what it earns", "Free, I just want it to exist", "Not sure"]
 
@@ -63,12 +142,16 @@ def visitor(request: Request) -> str:
 @app.middleware("http")
 async def measure(request: Request, call_next):
     request.state.t0 = time.perf_counter()
-    response = await call_next(request)
+    path = request.url.path
+    redirecting = wants_canonical_redirect(request.headers.get("host", ""), path)
+    if redirecting:
+        response = RedirectResponse(canonical_url(path, request.url.query), status_code=301)
+    else:
+        response = await call_next(request)
     ms = (time.perf_counter() - request.state.t0) * 1000
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    path = request.url.path
-    if request.method == "GET" and not path.startswith(SKIP) and "text/html" in response.headers.get("content-type", ""):
+    if not redirecting and request.method == "GET" and not path.startswith(SKIP) and "text/html" in response.headers.get("content-type", ""):
         ua = request.headers.get("user-agent", "")
         device, browser, is_bot = analytics.describe(ua)
         try:  # bots that say so are kept but labeled, so the dashboard can count them apart
@@ -466,7 +549,12 @@ def favicon():
 
 @app.get("/robots.txt")
 def robots():
-    return PlainTextResponse("User-agent: *\nDisallow: /admin\n")
+    return PlainTextResponse(robots_txt())
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    return Response(sitemap_xml(), media_type="application/xml")
 
 
 # ---------- Mike's private pages ----------

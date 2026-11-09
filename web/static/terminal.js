@@ -28,7 +28,7 @@
       if (!p) return line(`project: try one of ${data.projects.map((x) => x.slug).join(", ")}`, "t-err");
       line(`<b>${esc(p.name)}</b> <span class="t-ok">[${esc(p.status)}]</span>`); line(esc(p.body));
       line(`<span class="dim">built with: ${esc(p.built_with.join(", "))}</span>`);
-      line(p.link ? link(p.link, p.link) + "  " + link(`/projects/${p.slug}`, "page") : link(`/projects/${p.slug}`, "open the page"));
+      line(p.link ? link(p.link, p.link) + "  " + link(["", "projects", p.slug].join("/"), "page") : link(["", "projects", p.slug].join("/"), "open the page"));
     },
     lab: (how = "hot") => {
       let ex = [...data.experiments];
@@ -45,7 +45,7 @@
       line(`<span class="dim">used:</span>     ${esc(e.used.join(", "))}`);
       line(`<span class="dim">result:</span>   ${esc(e.result)}`);
       line(`<span class="dim">verdict:</span>  <span class="${e.verdict === "flop" ? "t-err" : "t-ok"}">${esc(e.verdict_label)}</span>. ${esc(e.verdict_line)}`);
-      line(link(`/lab/${e.slug}`, "open the page (comments live there)"));
+      line(link(["", "lab", e.slug].join("/"), "open the page (comments live there)"));
     },
     vote: async (n, dir) => {
       const e = data.experiments.find((x) => parseInt(x.number.replace("EXP ", ""), 10) === parseInt(n, 10));

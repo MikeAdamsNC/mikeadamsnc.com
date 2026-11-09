@@ -88,6 +88,30 @@ def wants_canonical_redirect(host: str, path: str) -> bool:
     return name.endswith(".run.app") and "---" not in name
 
 
+def is_public_host(host: str) -> bool:
+    """The apex, www, or the untagged Cloud Run URL: hosts whose pages search engines see."""
+    name = bare_host(host)
+    return name == CANONICAL_HOST or wants_canonical_redirect(host, "/")
+
+
+def slashless_redirect(host: str, path: str, query: str = "") -> str | None:
+    """Where /path/ should 301 to, or None when the path is fine as it is.
+
+    The root stays. Public hosts go straight to https://mikeadamsnc.com/path in
+    one hop (no http:// detour); localhost and preview hosts stay on their own
+    host. Leading slashes collapse so //evil.example/ can't become a
+    protocol-relative Location.
+    """
+    if path == "/" or not path.endswith("/"):
+        return None
+    clean = "/" + path.strip("/")
+    if stays_on_called_host(clean):
+        return None
+    if is_public_host(host):
+        return canonical_url(clean, query)
+    return f"{clean}?{query}" if query else clean
+
+
 def canonical_url(path: str, query: str = "") -> str:
     url = f"{CANONICAL_ORIGIN}{path or '/'}"
     return f"{url}?{query}" if query else url
@@ -122,6 +146,12 @@ def robots_txt() -> str:
         "Disallow: /logout\n"
         "Disallow: /auth/\n"
         "Disallow: /api/\n"
+        "Disallow: /e$\n"
+        "Disallow: /talk\n"
+        "Disallow: /vote/\n"
+        "Disallow: /pitch/chat\n"
+        "Disallow: /pitch/card\n"
+        "Disallow: /lab/*/comments\n"
         f"\nSitemap: {CANONICAL_ORIGIN}/sitemap.xml\n"
     )
 
@@ -143,8 +173,12 @@ def visitor(request: Request) -> str:
 async def measure(request: Request, call_next):
     request.state.t0 = time.perf_counter()
     path = request.url.path
-    redirecting = wants_canonical_redirect(request.headers.get("host", ""), path)
-    if redirecting:
+    host = request.headers.get("host", "")
+    slashless = slashless_redirect(host, path, request.url.query) if request.method in ("GET", "HEAD") else None
+    redirecting = bool(slashless) or wants_canonical_redirect(host, path)
+    if slashless:
+        response = RedirectResponse(slashless, status_code=301)
+    elif redirecting:
         response = RedirectResponse(canonical_url(path, request.url.query), status_code=301)
     else:
         response = await call_next(request)
@@ -178,7 +212,7 @@ def page(request: Request, name: str, status: int = 200, **kw) -> HTMLResponse:
     }
     me = auth.person(request.cookies.get(auth.COOKIE))
     return templates.TemplateResponse(request, name, {"site": content.site(), "xray": facts, "year": clock.now().year,
-                                                      "signed_in": me, "signin_on": auth.enabled(), **kw},
+                                                      "signed_in": me, "signin_on": auth.enabled(), "status": status, **kw},
                                       status_code=status)
 
 

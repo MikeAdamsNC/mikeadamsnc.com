@@ -678,7 +678,51 @@ def test_sitemap_lists_the_public_pages_and_robots_points_at_it(client):
     assert "Sitemap: https://mikeadamsnc.com/sitemap.xml" in robots
     for rule in ["Disallow: /admin\n", "Disallow: /login\n", "Disallow: /logout\n", "Disallow: /auth/\n", "Disallow: /api/\n"]:
         assert rule in robots
-    assert "Disallow: /lab" not in robots and "Disallow: /pitch" not in robots and "Disallow: /idea" not in robots
+    lines = robots.splitlines()
+    for public in ["Disallow: /lab", "Disallow: /lab/", "Disallow: /pitch", "Disallow: /pitch/form", "Disallow: /idea", "Disallow: /projects"]:
+        assert public not in lines
+
+
+def test_robots_keeps_crawlers_off_the_post_only_endpoints(client):
+    lines = client.get("/robots.txt").text.splitlines()
+    for rule in ["Disallow: /e$", "Disallow: /talk", "Disallow: /vote/", "Disallow: /pitch/chat",
+                 "Disallow: /pitch/card", "Disallow: /lab/*/comments"]:
+        assert rule in lines
+    # /e is anchored so it can't swallow a future public page that starts with /e
+    assert "Disallow: /e" not in lines
+
+
+def test_trailing_slash_301s_straight_to_https_apex_keeping_the_query(client):
+    for host in ("mikeadamsnc.com", "www.mikeadamsnc.com", "mikeadamsnc-656071931218.us-east1.run.app"):
+        r = _host(host).get("/lab/grill-autopilot/?sort=new", follow_redirects=False)
+        assert r.status_code == 301, host
+        assert r.headers["location"] == "https://mikeadamsnc.com/lab/grill-autopilot?sort=new"
+        r = _host(host).get("/lab/", follow_redirects=False)
+        assert r.status_code == 301 and r.headers["location"] == "https://mikeadamsnc.com/lab"
+    assert views() == []  # a redirect is not a page view
+    assert _host("mikeadamsnc.com").get("/", follow_redirects=False).status_code == 200
+
+
+def test_trailing_slash_stays_on_local_and_preview_hosts_and_cannot_open_redirect(client):
+    r = client.get("/lab/?x=1", follow_redirects=False)
+    assert r.status_code == 301 and r.headers["location"] == "/lab?x=1"
+    assert client.get("/lab/").status_code == 200
+    preview = _host("preview---mikeadamsnc-656071931218.us-east1.run.app")
+    assert preview.get("/pitch/", follow_redirects=False).headers["location"] == "/pitch"
+    r = client.get("http://testserver//evil.example/", follow_redirects=False)
+    assert r.headers["location"] == "/evil.example"
+    r = _host("mikeadamsnc.com").get("https://mikeadamsnc.com//evil.example/", follow_redirects=False)
+    assert r.headers["location"] == "https://mikeadamsnc.com/evil.example"
+
+
+def test_404_is_noindex_with_no_canonical(client):
+    r = client.get("/no-such-page")
+    assert r.status_code == 404
+    assert 'name="robots" content="noindex"' in r.text
+    assert 'rel="canonical"' not in r.text
+    missing = client.get("/lab/no-such-experiment")
+    assert missing.status_code == 404 and 'rel="canonical"' not in missing.text
+    assert 'rel="canonical"' in client.get("/lab").text
 
 
 def test_thanks_is_noindex_and_sign_in_links_are_nofollow(client, monkeypatch):

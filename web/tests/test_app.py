@@ -739,3 +739,28 @@ def test_thanks_is_noindex_and_sign_in_links_are_nofollow(client, monkeypatch):
     monkeypatch.setenv("ADMIN_EMAILS", "mike@example.com")
     client.cookies.set(auth.COOKIE, auth.make_cookie("mike@example.com"))
     assert 'href="/admin/logout" rel="nofollow"' in client.get("/admin").text
+
+
+def test_xray_labels_name_the_model_from_one_place(client):
+    from web import gemini
+    for path in ["/", "/pitch"]:
+        r = client.get(path).text
+        assert gemini.MODEL_NAME in r and "{{ model_name }}" not in r, path
+
+
+def test_think_off_never_sends_a_zero_budget_to_hydrogen(monkeypatch):
+    # Hydrogen answers a thinkingBudget (or MINIMAL) with a 400; its lightest setting is LOW.
+    from web import gemini
+    sent = {}
+
+    class R:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self): return {"candidates": [{"finishReason": "STOP", "content": {"parts": [{"text": "{}"}]}}]}
+
+    monkeypatch.setattr(gemini, "_token", lambda: "t")
+    monkeypatch.setattr(gemini.httpx, "post", lambda url, json, headers, timeout: sent.update(json) or R())
+    gemini.json_reply([{"role": "user", "parts": [{"text": "hi"}]}], think=False)
+    tc = sent["generationConfig"]["thinkingConfig"]
+    if gemini.MODEL == "gemini-4-hydrogen":
+        assert tc == {"thinkingLevel": "LOW"}

@@ -1,4 +1,4 @@
-"""One door to Gemini 3.5 Flash on Vertex AI (global endpoint; it isn't offered in us-east1).
+"""One door to Gemini on Vertex AI (global endpoint; it isn't offered in us-east1).
 
 Uses the site's own Google identity on Cloud Run, so there's no API key to keep.
 """
@@ -7,10 +7,14 @@ import time
 
 import httpx
 
-# 3.5, not 3.8: on 2026-10-23 Gemini 3.8 Flash on Vertex stalled 15-90s (or timed out) even on a
-# two-word prompt, from every project, while 3.5 Flash answered in 1-2s with nearly the same quality.
-# Switch back here once 3.8 is steady.
-MODEL = "gemini-3.5-flash"
+# Gemini 4 Hydrogen since 2026-11-12 (GA that day; replaces the 3.x Flash line).
+# To go back, swap the two lines below for: MODEL, MODEL_NAME = "gemini-3.5-flash", "Gemini 3.5 Flash"
+# (3.5 was picked over 3.8 on 2026-10-23, when 3.8 Flash on Vertex stalled 15-90s on every project.)
+MODEL = "gemini-4-hydrogen"
+MODEL_NAME = "Gemini 4 Hydrogen"  # shown on the site's x-ray labels
+# Hydrogen has no "off" for thinking: thinkingBudget and thinkingLevel MINIMAL are both a 400, so
+# its lightest setting is LOW. 3.5 Flash could turn thinking off with a zero budget.
+_THINK_OFF = {"thinkingBudget": 0} if MODEL == "gemini-3.5-flash" else {"thinkingLevel": "LOW"}
 URL = f"https://aiplatform.googleapis.com/v1/projects/macmanager-home/locations/global/publishers/google/models/{MODEL}:generateContent"
 
 
@@ -27,11 +31,11 @@ def json_reply(contents: list[dict], system: str | None = None, schema: dict | N
                max_tokens: int = 600, temperature: float = 0.4, timeout: float = 30, think: bool = True) -> dict:
     """Ask for a JSON answer; returns the parsed object. Raises on any failure.
 
-    Thinking is LOW by default; think=False turns it off (3.5 Flash honors that; 3.8 did not), which
-    halves the time for jobs that don't need it, like the pitch card. A rate-limit (429), a Google-side error, or an answer that ran on past its length
+    Thinking is LOW by default; think=False asks for the least the model allows (off on 3.5 Flash,
+    which halved the pitch card's time; Hydrogen's floor is LOW, so there it's the same as think=True). A rate-limit (429), a Google-side error, or an answer that ran on past its length
     gets up to two more tries."""
     config = {"maxOutputTokens": max_tokens, "responseMimeType": "application/json", "temperature": temperature,
-              "thinkingConfig": {"thinkingLevel": "LOW"} if think else {"thinkingBudget": 0}}
+              "thinkingConfig": {"thinkingLevel": "LOW"} if think else _THINK_OFF}
     if schema:
         config["responseSchema"] = schema
     body = {"contents": contents, "generationConfig": config}

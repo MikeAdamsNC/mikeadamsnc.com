@@ -20,7 +20,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, bot, card, clock, content, moderate, ranking, reading, talk, versions
+from . import analytics, auth, bot, card, clock, content, gemini, moderate, ranking, reading, talk, versions
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -32,6 +32,7 @@ app.mount("/brand", StaticFiles(directory=ROOT / "brand"), name="brand")
 app.mount("/static", StaticFiles(directory=ROOT / "web" / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "web" / "templates")
 templates.env.globals["icon_svg"] = card.icon_svg
+templates.env.globals["model_name"] = gemini.MODEL_NAME
 
 
 @functools.cache

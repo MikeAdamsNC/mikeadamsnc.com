@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import time
 from xml.sax.saxutils import escape as xml_escape
 
@@ -20,7 +21,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analytics, auth, bot, card, clock, content, gemini, moderate, ranking, reading, talk, versions
+from . import analytics, auth, bot, card, clock, content, drop, gemini, moderate, ranking, reading, talk, versions
 from .store import make_store
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -46,8 +47,9 @@ def asset(path: str) -> str:
 templates.env.globals["asset"] = asset
 store = make_store()
 recorder = analytics.make_recorder()
+files = drop.make_files()  # where uploaded files go; None while the drop box is off
 
-SKIP = ("/static", "/brand", "/lab-photo", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/robots.txt", "/sitemap.xml")
+SKIP = ("/static", "/brand", "/lab-photo", "/health", "/e", "/favicon", "/admin", "/auth", "/api", "/login", "/logout", "/vote", "/drop/", "/robots.txt", "/sitemap.xml")
 PITCH_KINDS = ["App", "Website", "Something else", "Not sure"]
 CANONICAL_HOST = "mikeadamsnc.com"
 CANONICAL_ORIGIN = "https://mikeadamsnc.com"
@@ -147,6 +149,7 @@ def robots_txt() -> str:
         "Disallow: /logout\n"
         "Disallow: /auth/\n"
         "Disallow: /api/\n"
+        "Disallow: /drop\n"
         "Disallow: /e$\n"
         "Disallow: /talk\n"
         "Disallow: /vote/\n"
@@ -574,6 +577,10 @@ def health():
     """The scheduler pings this every 10 minutes so the site stays warm, and the reading
     shelf refreshes off it about hourly. (Not /healthz: Cloud Run reserves paths ending in z.)"""
     reading.refresh_if_due(store)
+    try:  # the drop box: keep uploads that finished, clear ones that never will
+        drop.sweep_if_due(store, files)
+    except Exception as e:
+        logging.warning("drop sweep failed: %s", e)
     return PlainTextResponse("ok")
 
 
@@ -687,6 +694,188 @@ def pitch_status(request: Request, pid: str, status: str = Form(...)):
         raise HTTPException(400)
     store.set_status(pid, status)
     return RedirectResponse("/admin#pitches", status_code=303)
+
+
+# ---------- the drop box: files people send Mike through a link he made (web/drop.py) ----------
+
+def site_origin(request: Request) -> str:
+    """The address the site is being used at: the real one, a preview, or a laptop."""
+    host = request.headers.get("host", CANONICAL_HOST)
+    if is_public_host(host):
+        return CANONICAL_ORIGIN
+    return ("http://" if "localhost" in host or "127.0.0.1" in host else "https://") + host
+
+
+def from_this_site(request: Request) -> bool:
+    """Browsers say which site a request was sent from; another site's page is turned away."""
+    origin = request.headers.get("origin")
+    return origin is None or origin == site_origin(request)
+
+
+@app.exception_handler(drop.Refused)
+def drop_refused(request: Request, exc: drop.Refused):
+    return JSONResponse({"error": exc.message}, status_code=exc.status)
+
+
+async def drop_call(request: Request, limit: str, most: int) -> tuple[dict, str]:
+    """What every call from the upload page must pass first: it came from this site, it's
+    JSON, this visitor isn't hammering, the drop box is on and the link's secret is the right shape."""
+    if not from_this_site(request):
+        raise HTTPException(403)
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(400)
+    if not isinstance(data, dict):
+        raise HTTPException(400)
+    if store.bump(f"drop-{limit}-{visitor(request)}-{clock.today()}") > most:
+        raise drop.Refused(429, "The daily limit has been reached. Please try again tomorrow.")
+    token = data.get("token")
+    if files is None or not drop.is_token(token):
+        raise drop.Refused(404, "This upload link is not active.")
+    return data, token
+
+
+@app.get("/drop")
+def drop_page(request: Request):
+    """One page for every link. The link's secret is after the #, so it never reaches here."""
+    return page(request, "drop.html", max_file=drop.size_words(drop.MAX_FILE))
+
+
+@app.post("/drop/open")
+async def drop_open(request: Request):
+    _, token = await drop_call(request, "open", 200)
+    link = store.get_drop(token)
+    if not drop.active(link):
+        raise drop.Refused(404, "This upload link is not active.")
+    return drop.facts(link)
+
+
+@app.post("/drop/start")
+async def drop_start(request: Request):
+    """Open the upload for one file; the page then sends the bytes straight to storage."""
+    data, token = await drop_call(request, "start", 600)
+    return drop.start(store, files, token, data.get("name"), data.get("size"), data.get("from"), data.get("note"),
+                      site_origin(request))
+
+
+@app.post("/drop/offset")
+async def drop_offset(request: Request):
+    """How much of a file storage already has, so a dropped connection resumes there."""
+    data, token = await drop_call(request, "check", 3000)
+    f = drop.file_of(store, token, data.get("id"))
+    if f and f["status"] == "pending":
+        kept = files.persisted(f["session"], f["size"])
+        if kept is not None:
+            return {"offset": kept}
+        if drop.settle(store, files, f) != "done":
+            f = None
+    if not f:
+        raise drop.Refused(404, "That upload was stopped. Please send the file again.")
+    return {"offset": f["size"]}
+
+
+@app.post("/drop/done")
+async def drop_done(request: Request):
+    """The page says a file is finished; believe storage, not the page."""
+    data, token = await drop_call(request, "check", 3000)
+    f = drop.file_of(store, token, data.get("id"))
+    if not f or drop.settle(store, files, f) != "done":
+        raise drop.Refused(409, "That file did not arrive completely. Please send it again.")
+    if f["status"] == "pending":  # count it once, however many times the page says so
+        device, browser, _ = analytics.describe(request.headers.get("user-agent", ""))
+        recorder.record(analytics.row("drop_file", path="/drop", visitor=visitor(request), device=device, browser=browser,
+                                      value=float(f["size"])))
+    return {"ok": True}
+
+
+@app.put("/drop/local/{key}")
+async def drop_local(request: Request, key: str):
+    """A laptop and the tests only: stands in for Google's upload address (drop.LocalFiles)."""
+    if not isinstance(files, drop.LocalFiles):
+        raise HTTPException(404)
+    asked = request.headers.get("content-range", "")
+    m = re.fullmatch(r"bytes (?:\*|(\d+)-\d+)/\d+", asked)
+    if asked and not m:
+        raise HTTPException(400)
+    first = int(m.group(1)) if m and m.group(1) else (None if m else 0)
+    got = files.receive(key, first, await request.body())
+    if got is None:
+        raise HTTPException(404 if key not in files.sessions else 400)
+    kept, size = got
+    if kept == size:
+        return {"size": size}
+    return Response(status_code=308, headers={"Range": f"bytes=0-{kept - 1}"} if kept else {})
+
+
+def mike_only(request: Request) -> str:
+    me = require_mike(request)
+    if not me or not from_this_site(request):
+        raise HTTPException(403)
+    return me
+
+
+@app.get("/admin/drop")
+def admin_drop(request: Request):
+    if not auth.enabled():
+        return page(request, "admin_off.html")
+    me = require_mike(request)
+    if not me:
+        return RedirectResponse("/login?next=/admin/drop", status_code=303)
+    if files is None:
+        return page(request, "admin_drop.html", me=me, on=False)
+    drop.sweep(store, files)
+    links = [{**link, "live": drop.active(link), "used": drop.size_words(max(0, link.get("bytes", 0)))}
+             for link in store.list_drops()]
+    sent = [{**f, "sender": f.get("from"), "size_words": drop.size_words(f["size"])} for f in store.list_drop_files()]
+    return page(request, "admin_drop.html", me=me, on=True, origin=site_origin(request),
+                links=[link for link in links if link["live"] or link.get("files", 0) > 0], sent=sent,
+                waiting=len(store.list_drop_files(None, ("pending",))), day_choices=drop.LINK_DAYS,
+                max_file=drop.size_words(drop.MAX_FILE), max_link=drop.size_words(drop.MAX_LINK_BYTES),
+                max_files=drop.MAX_LINK_FILES)
+
+
+@app.post("/admin/drop/links")
+def drop_link_new(request: Request, label: str = Form(""), days: int = Form(7)):
+    mike_only(request)
+    if files is None:
+        raise HTTPException(404)
+    drop.new_link(store, label, days)
+    return RedirectResponse("/admin/drop#links", status_code=303)
+
+
+@app.post("/admin/drop/close")
+def drop_link_close(request: Request, token: str = Form(...)):
+    """The secret rides in the form, not the address, so it stays out of the server's logs."""
+    mike_only(request)
+    if files is None or not drop.is_token(token) or not store.get_drop(token):
+        raise HTTPException(404)
+    drop.close(store, files, token)
+    return RedirectResponse("/admin/drop#links", status_code=303)
+
+
+@app.get("/admin/drop/files/{fid}")
+def drop_file_get(request: Request, fid: str):
+    """Mike downloads a file: a link straight to storage that works for ten minutes."""
+    if not require_mike(request):
+        raise HTTPException(403)
+    f = store.get_drop_file(fid) if files is not None else None
+    if not f or f["status"] != "done":
+        raise HTTPException(404)
+    store.set_drop_file(fid, downloaded_at=clock.stamp())
+    if isinstance(files, drop.LocalFiles):
+        return FileResponse(files.path(f["object"]), filename=f["name"], media_type=drop.BINARY)
+    return RedirectResponse(files.download_url(f["object"]), status_code=303)
+
+
+@app.post("/admin/drop/files/{fid}/delete")
+def drop_file_delete(request: Request, fid: str):
+    mike_only(request)
+    f = store.get_drop_file(fid) if files is not None else None
+    if not f:
+        raise HTTPException(404)
+    drop.remove(store, files, f)
+    return RedirectResponse("/admin/drop#files", status_code=303)
 
 
 # ---------- Archer's private door: Archer asks for new pitches and pushes them to Mike ----------

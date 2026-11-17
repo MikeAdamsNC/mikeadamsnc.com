@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Secure file upload · MikeAdamsNC{% endblock %}
+{% block description %}A private upload page. An upload link from Mike Adams is required.{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body_class %}plain{% endblock %}
+{% block main %}
+<section class="wrap narrow drop">
+  <div class="mono label">Private upload</div>
+  <h1 id="drop-title">Send files to Mike Adams</h1>
+  <p class="lede" id="drop-lede">Checking your link…</p>
+  <noscript><p class="err">This page needs JavaScript turned on to send files.</p></noscript>
+
+  <form id="drop-gate" class="form" hidden>
+    <label class="q"><span>Paste your upload link</span><small>You will have received it from Mike Adams.</small>
+      <input name="code" autocomplete="off" autocapitalize="off" spellcheck="false" required></label>
+    <div><button class="btn b1" type="submit">Open</button></div>
+  </form>
+
+  <div id="drop-box" class="form" hidden>
+    <div class="two">
+      <label class="q"><span>Your name</span><input id="drop-from" maxlength="80" autocomplete="name"></label>
+      <label class="q"><span>Note (optional)</span><input id="drop-note" maxlength="500" autocomplete="off"></label>
+    </div>
+    <label class="drop-zone" id="drop-zone">
+      <input type="file" id="drop-input" multiple>
+      <b>Choose files</b>
+      <span>or drag them here. Any file type, up to {{ max_file }} each.</span>
+    </label>
+    <ul class="drop-list" id="drop-list" aria-live="polite"></ul>
+    <p class="fine">No account or sign-in is needed. Please keep this page open until every file shows "Sent". Files go to private storage that only Mike Adams can access. <a href="/privacy" class="inline">Privacy</a>.</p>
+  </div>
+</section>
+<script src="{{ asset('drop.js') }}" defer></script>
+{% endblock %}

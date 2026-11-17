@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Drop box · MikeAdamsNC{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block main %}
+<section class="wrap admin">
+  <div class="sec-head"><div><div class="mono label">Private · {{ me }}</div><h1>Drop box</h1></div>
+    <div class="range"><a href="/admin">Dashboard</a><a href="/admin/drop" class="on">Drop box</a><a href="/admin/logout" rel="nofollow">Sign out</a></div></div>
+  {% if not on %}
+  <div class="panel" style="margin-top:26px"><h3>Not set up yet</h3>
+    <p class="fine">The drop box needs its private storage bucket. Run <code>./deploy/setup-drop.sh</code> once, then deploy.</p></div>
+  {% else %}
+  <p class="lede">Make a link, send it to someone, and what they upload lands here. They need no account or sign-in, only the link. Only this page can open the files.</p>
+  <div class="panel" style="margin-top:26px"><h3>New upload link</h3>
+    <form method="post" action="/admin/drop/links" class="drop-new">
+      <input name="label" maxlength="80" placeholder="What it's for, e.g. Project files" required>
+      <select name="days">{% for d in day_choices %}<option value="{{ d }}" {{ 'selected' if d == 7 }}>Works for {{ d }} day{{ 's' if d != 1 }}</option>{% endfor %}</select>
+      <button class="btn b1 small" type="submit">Make link</button>
+    </form>
+    <p class="fine">Anyone with the link can upload until it runs out or you close it: up to {{ max_file }} a file, {{ max_link }} and {{ max_files }} files a link. They see the label as the page's title.</p>
+  </div>
+
+  <h2 id="links" class="h2">Links</h2>
+  {% for l in links %}
+  <div class="pitch-item {{ 'st-new' if l.live }}">
+    <div class="pi-top"><span class="mono">{% if l.live %}OPEN UNTIL {{ l.expires_at[:16]|replace('T',' ') }}{% elif l.closed %}CLOSED{% else %}RAN OUT {{ l.expires_at[:10] }}{% endif %} · {{ l.files or 0 }} file{{ 's' if l.files != 1 }} · {{ l.used }}</span>
+      {% if l.live %}<form method="post" action="/admin/drop/close" onsubmit="return confirm('Close this link? Nobody can upload with it again, and uploads still going are stopped.')"><input type="hidden" name="token" value="{{ l.token }}"><button>close link</button></form>{% endif %}</div>
+    <p class="pi-what">{{ l.label }}</p>
+    {% if l.live %}<div class="drop-link"><input readonly value="{{ origin }}/drop#{{ l.token }}" aria-label="Upload link"><button type="button" class="x" data-copy>copy</button></div>{% endif %}
+  </div>
+  {% else %}<p class="fine">No links yet.</p>{% endfor %}
+
+  <h2 id="files" class="h2">Files</h2>
+  {% if waiting %}<p class="fine" style="margin-bottom:12px">{{ waiting }} still uploading.</p>{% endif %}
+  {% for f in sent %}
+  <div class="pitch-item {{ 'st-new' if not f.downloaded_at }}">
+    <div class="pi-top"><span class="mono">{{ f.done_at[:16]|replace('T',' ') }} · {{ f.size_words }} · {{ f.label }}{% if not f.downloaded_at %} · NEW{% endif %}</span>
+      <form method="post" action="/admin/drop/files/{{ f.id }}/delete" onsubmit="return confirm('Delete this file for good?')"><a class="x" href="/admin/drop/files/{{ f.id }}">download</a><button>delete</button></form></div>
+    <p class="pi-what">{{ f.name }}</p>
+    <p class="fine">{{ f.sender or 'No name given' }}{% if f.note %} · {{ f.note }}{% endif %}</p>
+  </div>
+  {% else %}<p class="fine">Nothing has been sent yet.</p>{% endfor %}
+  <p class="fine" style="margin-top:18px">These came from whoever had a link. Open them with the same care as an email attachment.</p>
+  {% endif %}
+</section>
+<script>
+document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+  const field = b.previousElementSibling;
+  field.select();
+  try { await navigator.clipboard.writeText(field.value); b.textContent = "copied"; setTimeout(() => (b.textContent = "copy"), 1500); } catch (_) {}
+}));
+</script>
+{% endblock %}

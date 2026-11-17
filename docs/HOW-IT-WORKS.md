@@ -10,11 +10,13 @@ Plain language. Update this in the same change as anything it describes.
   logo and icons are served from `brand/`; the stylesheet and the page's small script
   are in `web/static/`.
 - **Pages:** home, the Lab (`/lab`) and one page per experiment (`/lab/<name>`), one page
-  per project (`/projects/<name>`), the idea form (`/pitch`), privacy, and Mike's private
-  dashboard (`/admin`).
+  per project (`/projects/<name>`), the idea form (`/pitch`), privacy, the drop box
+  (`/drop`, for people Mike gives an upload link), and Mike's private dashboard (`/admin`,
+  with the drop box's page at `/admin/drop`).
 - **Where it runs:** Google Cloud Run, service `mikeadamsnc`, project `macmanager-home`,
   region us-east1, as its own identity `mikeadamsnc-web` (allowed to use the site's
-  database, write analytics and read its two secrets, nothing else). It shuts down when
+  database, write analytics, read its two secrets and, for the drop box, use its one
+  private bucket and sign download links as itself; nothing else). It shuts down when
   idle and costs about nothing.
 - **Keeping it warm:** the scheduler job `mikeadamsnc-keep-warm` visits `/health` every
   10 minutes so a visitor rarely waits for it to start.
@@ -119,6 +121,71 @@ The site keeps only the latest summary and photo (Firestore `lab`) and checks ev
 field it's sent; anything else is dropped. If the summary is over 30 minutes old, or
 Archer's setting `site/live_lab` is `off`, the panel goes back to "quiet in the lab".
 
+## The drop box (files people send Mike)
+
+A way for someone to send Mike photos and large files. Nothing sent is ever shown on the
+site: it goes to private storage and only Mike's dashboard can open it. The code is
+`web/drop.py`; the upload page's script is `web/static/drop.js`.
+
+**How Mike uses it.** On `/admin/drop` he makes an upload link (a label, and whether it
+works for 1, 7 or 30 days), copies it and sends it to whoever he wants files from. What
+they upload shows up on the same page with the sender's name and note if they gave one;
+Mike downloads or deletes each file there, and can close a link at any time. Files stay
+until he deletes them. There is no push to his phone: he looks at the page.
+
+**How the sender uses it.** They need no account or sign-in of any kind (Google sign-in is
+only for Mike's dashboard): the link is all it takes. They open it, pick or drag in files,
+and keep the page open until each one shows "Sent". Files go one at a time with a progress
+bar; if the connection drops, the upload picks up where it stopped (also after a reload,
+if they pick the same file again).
+
+**How the page looks.** Plain and formal on purpose, because it goes to people outside
+(clients, colleagues): the logo, the upload box and a short footer, with no site menu,
+socials or X-ray (`body.plain` in the stylesheet), and its wording says "Mike Adams" and
+"please". The title is the label Mike gave the link, so the label should read well to the
+person getting it.
+
+**What keeps it safe:**
+
+- **No link, no upload.** The link looks like `https://mikeadamsnc.com/drop#<secret>`. The
+  secret is the part after the `#`, which browsers never send as part of a page address,
+  so it stays out of the server's logs, our analytics and link previews; the page's script
+  sends it only in its own calls. It is 32 random characters. `/drop` with no link, a
+  link that ran out or a closed link shows nothing to upload to.
+- **Files never pass through the site.** Cloud Run refuses any request over 32 MB, so for
+  each file the site asks Cloud Storage for a one-file upload address of exactly that
+  file's size and hands it to the browser, which sends the bytes straight to Google.
+  That address can write that one file and do nothing else, and stops working after a
+  week or when the link is closed.
+- **The bucket is private** (`mikeadamsnc-drop`, us-east1): public access is blocked at
+  the bucket, and only the site's identity and Mike (as the project's owner) can add, read
+  or delete in it. Google lets a project's other editors and viewers into a new bucket by
+  default; the setup script takes them off this one. Mike's download is a link to the
+  file that works for ten minutes.
+- **Nothing a stranger sends is shown or run.** Every file is stored under a random name
+  as plain bytes marked "download, never display", whatever it claims to be. The file's
+  real name is kept beside it, stripped of folders and odd characters, and shown as text.
+- **Limits:** 10 GB a file; 50 GB and 500 files a link (`MAX_FILE`, `MAX_LINK_BYTES`,
+  `MAX_LINK_FILES` in `web/drop.py`); a visitor can start 600 uploads and try 200 links a
+  day. Deleting a file gives its room back to the link.
+- **Checked against what really arrived.** A file counts as sent only when storage holds
+  exactly the size that was promised; anything else is deleted. About hourly (riding on
+  the keep-warm ping) and whenever Mike opens the page, the site settles uploads the page
+  never reported: finished ones are kept, ones not finished within two days are cleared.
+- **Mike's buttons** (make a link, close it, delete a file) need his sign-in and must come
+  from the site's own pages. Closing a link also stops uploads still going through it.
+
+Where things are kept: links in Firestore `drops` (the secret is the document's name, as
+with pitch cards), one row per file in `drop_files`, the bytes in the bucket under
+`<a code made from the link>/<random id>`. Each finished file is one `drop_file` row in
+analytics with its size; the secret is never recorded.
+
+**Setting it up (once):** `./deploy/setup-drop.sh` makes the bucket and gives the site's
+identity its two permissions; `deploy/deploy.sh` turns the drop box on when it sees the
+bucket (it passes `UPLOAD_BUCKET`). Until then `/drop` opens nothing and `/admin/drop`
+says it isn't set up. On a laptop and in tests the bucket is a temp folder and the
+browser uploads to the app itself (`drop.LocalFiles`).
+
 ## What I'm reading
 
 A shelf of AI and tech stories on the home page (six newest) and `/reading` (last 14
@@ -210,7 +277,7 @@ the public can comment.
 
 | Job | When | What it does |
 |---|---|---|
-| `mikeadamsnc-keep-warm` | Every 10 minutes | Visits the site so it stays ready for visitors. |
+| `mikeadamsnc-keep-warm` | Every 10 minutes | Visits the site so it stays ready for visitors. About hourly the same visit refreshes the reading shelf and tidies the drop box. |
 | Archer `site_lab` | Every 5 minutes | Sends the live lab summary (and the day's photo once). |
 | Archer `site_pitches` | Every 5 minutes | Pushes each new pitch and comment to Mike's phone, then marks it sent. |
 
@@ -237,3 +304,7 @@ Expected under $1/month: Cloud Run, Firestore and BigQuery all stay inside Googl
 free monthly allowances at this traffic; the scheduler job is one of three free ones.
 The AI (pitch chat, pitch cards and comment checks) costs about 3 to 4 cents a pitch conversation and
 fractions of a cent a comment, watched by the $5 budget alert.
+
+The drop box costs what it holds: about 2 cents a month per GB kept in the bucket, and
+about 12 cents per GB when Mike downloads. Uploads are free. A full 50 GB link left
+sitting is about $1 a month.

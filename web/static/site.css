@@ -348,3 +348,23 @@ a.chatbox{display:block}a.chatbox:hover{box-shadow:0 20px 40px -28px rgba(11,22,
   .psum dl{grid-template-columns:1fr}.psum dt{margin-top:6px}
 }
 .card-opts[hidden]{display:none!important}
+
+/* the drop box: the upload page, and its page on Mike's dashboard */
+/* a plain page (body.plain): the logo, the page and a short footer; no site menu, socials or X-ray */
+.plain .links,.plain .menu,.plain .soc,.plain .lam,.plain .xside{display:none}
+.drop [hidden]{display:none}  /* .form is display:flex, which would otherwise show a hidden part */
+.drop-zone{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:40px 20px;border:2px dashed var(--line);border-radius:16px;background:var(--white);cursor:pointer}
+.drop-zone b{font-size:18px;font-weight:800;color:var(--water)}.drop-zone span{color:var(--muted);font-size:15px}
+.drop-zone input{position:absolute;opacity:0;width:1px;height:1px}
+.drop-zone:hover,.drop-zone:focus-within,.drop-zone.over{border-color:var(--water);background:#EAF4F4}
+.drop-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}.drop-list:empty{display:none}
+.drop-list li{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.dl-top{display:flex;justify-content:space-between;gap:14px;font-size:15px}
+.dl-top b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dl-top span{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.dl-bar{height:6px;border-radius:99px;background:#EEF3F3;margin-top:9px;overflow:hidden}.dl-bar i{display:block;height:100%;width:0;background:var(--water);transition:width .2s}
+.drop-list li.ok .dl-top span{color:var(--water);font-weight:700}
+.drop-list li.bad .dl-top{flex-wrap:wrap}.drop-list li.bad .dl-top span{flex:1 1 100%;color:#7A2414;font-weight:600}.drop-list li.bad .dl-bar{display:none}
+.drop-new{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.drop-new input{flex:1 1 260px;width:auto}
+.drop-new select{font:inherit;font-size:16px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--white);color:var(--ink)}
+.drop-link{display:flex;gap:8px;align-items:center}.drop-link input{flex:1;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;padding:9px 12px}
+.pi-top a.x{display:inline-block}

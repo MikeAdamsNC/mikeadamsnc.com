@@ -97,6 +97,12 @@ with socials.
 - **Mountains to Sea:** the 3D trip across North Carolina (real elevation, live buoy
   waves). A site version and brand piece, not the front door. Prototype in
   `content-round2/`. Needs a lighter version for phones and a calm one for reduced motion.
+- **The drop box (decided and built 2026-11-17):** a private way for people to send Mike
+  photos and large files. Upload links Mike makes on his dashboard, not an open page
+  (an open one would let anyone fill the bucket with anything). Files go straight from
+  the browser to a private Cloud Storage bucket and only Mike's dashboard can open
+  them. Kept basic on purpose: no previews, no phone push, no auto-delete; files stay
+  until Mike deletes them. Details in `docs/HOW-IT-WORKS.md`.
 
 ## Build order
 

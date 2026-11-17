@@ -10,6 +10,11 @@ SECRETS="SESSION_KEY=mikeadamsnc-session-key:latest,ARCHER_TOKEN=mikeadamsnc-arc
 if gcloud secrets describe mikeadamsnc-google-client-id --project macmanager-home >/dev/null 2>&1; then
   SECRETS="$SECRETS,GOOGLE_CLIENT_ID=mikeadamsnc-google-client-id:latest,GOOGLE_CLIENT_SECRET=mikeadamsnc-google-client-secret:latest"
 fi
+ENVS="^|^SITE_BACKEND=cloud|ADMIN_EMAILS=triangleharbor@gmail.com,mikeadamsnc85@gmail.com|BUILD_TIME=$(TZ=America/New_York date '+%b %-d, %-I:%M %p')"
+# The drop box (files people send Mike) turns on once its bucket exists (deploy/setup-drop.sh)
+if gcloud storage buckets describe gs://mikeadamsnc-drop --project macmanager-home >/dev/null 2>&1; then
+  ENVS="$ENVS|UPLOAD_BUCKET=mikeadamsnc-drop"
+fi
 TRAFFIC=""
 [ -n "$PREVIEW" ] && TRAFFIC="--tag preview --no-traffic"
 gcloud run deploy mikeadamsnc \
@@ -20,7 +25,7 @@ gcloud run deploy mikeadamsnc \
   --min-instances 0 --max-instances 2 \
   --memory 512Mi --cpu 1 --concurrency 80 \
   --cpu-boost \
-  --set-env-vars "^|^SITE_BACKEND=cloud|ADMIN_EMAILS=triangleharbor@gmail.com,mikeadamsnc85@gmail.com|BUILD_TIME=$(TZ=America/New_York date '+%b %-d, %-I:%M %p')" \
+  --set-env-vars "$ENVS" \
   --set-secrets "$SECRETS" \
   $TRAFFIC --quiet
 # A preview deploy pins live traffic to the old version; a live deploy sends it all to the newest.

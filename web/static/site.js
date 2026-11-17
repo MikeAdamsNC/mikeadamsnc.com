@@ -28,6 +28,7 @@
     });
   };
   const toggle = () => {
+    if (document.body.classList.contains("plain")) return; // plain pages (the drop box) have no X-ray
     const on = document.body.classList.toggle("xray");
     btns.forEach((b) => b.setAttribute("aria-pressed", on));
     document.querySelector(".xside").setAttribute("aria-hidden", !on);

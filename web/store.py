@@ -23,6 +23,8 @@ class MemoryStore:
         self.lab_photo: bytes | None = None
         self.comments: dict[str, dict] = {}
         self.cards: dict[str, dict] = {}
+        self.drops: dict[str, dict] = {}
+        self.drop_files: dict[str, dict] = {}
 
     def add_pitch(self, pitch: dict) -> str:
         pid = uuid.uuid4().hex[:12]
@@ -114,6 +116,51 @@ class MemoryStore:
     def mark_comment_told(self, cid: str) -> None:
         if cid in self.comments:
             self.comments[cid]["archer_told_at"] = clock.stamp()
+
+    # the drop box: upload links Mike makes, and the files sent through them (web/drop.py)
+    def add_drop(self, link: dict) -> str:
+        token = secrets.token_urlsafe(24)
+        self.drops[token] = dict(link)
+        return token
+
+    def get_drop(self, token: str) -> dict | None:
+        link = self.drops.get(token)
+        return {"token": token, **link} if link else None
+
+    def list_drops(self) -> list[dict]:
+        return sorted(({"token": t, **d} for t, d in self.drops.items()), key=lambda d: d["created_at"], reverse=True)
+
+    def set_drop(self, token: str, **fields) -> None:
+        if token in self.drops:
+            self.drops[token].update(fields)
+
+    def reserve(self, token: str, nbytes: int, nfiles: int) -> dict:
+        """Add to (or give back from) a link's running totals; returns the new totals."""
+        link = self.drops.get(token)
+        if not link:
+            return {"bytes": 0, "files": 0}
+        link["bytes"] = link.get("bytes", 0) + nbytes
+        link["files"] = link.get("files", 0) + nfiles
+        return {"bytes": link["bytes"], "files": link["files"]}
+
+    def add_drop_file(self, fid: str, f: dict) -> None:
+        self.drop_files[fid] = dict(f)
+
+    def get_drop_file(self, fid: str) -> dict | None:
+        f = self.drop_files.get(fid)
+        return {"id": fid, **f} if f else None
+
+    def list_drop_files(self, token: str | None = None, statuses: tuple = ("done",)) -> list[dict]:
+        out = [{"id": i, **f} for i, f in self.drop_files.items()
+               if (token is None or f["drop"] == token) and f["status"] in statuses]
+        return sorted(out, key=lambda f: f["created_at"], reverse=True)
+
+    def set_drop_file(self, fid: str, **fields) -> None:
+        if fid in self.drop_files:
+            self.drop_files[fid].update(fields)
+
+    def delete_drop_file(self, fid: str) -> None:
+        self.drop_files.pop(fid, None)
 
     def daily_salt(self, day: str) -> bytes:
         return self.salts.setdefault(day, secrets.token_bytes(32))
@@ -253,6 +300,59 @@ class FirestoreStore:
 
     def mark_comment_told(self, cid: str) -> None:
         self.db.collection("comments").document(cid).update({"archer_told_at": clock.stamp()})
+
+    # the drop box (web/drop.py): collections "drops" (the link's secret is the document id,
+    # unguessable like a card's) and "drop_files"
+    def add_drop(self, link: dict) -> str:
+        token = secrets.token_urlsafe(24)
+        self.db.collection("drops").document(token).set(link)
+        return token
+
+    def get_drop(self, token: str) -> dict | None:
+        snap = self.db.collection("drops").document(token).get()
+        return {"token": snap.id, **snap.to_dict()} if snap.exists else None
+
+    def list_drops(self) -> list[dict]:
+        q = self.db.collection("drops").order_by("created_at", direction="DESCENDING").limit(200)
+        return [{"token": d.id, **d.to_dict()} for d in q.stream()]
+
+    def set_drop(self, token: str, **fields) -> None:
+        self.db.collection("drops").document(token).update(fields)
+
+    def reserve(self, token: str, nbytes: int, nfiles: int) -> dict:
+        """Add to (or give back from) a link's running totals in one step, so two uploads
+        starting at once can't both slip under the limit; returns the new totals."""
+        from google.api_core.exceptions import NotFound
+
+        ref = self.db.collection("drops").document(token)
+        try:
+            ref.update({"bytes": self.fs.Increment(nbytes), "files": self.fs.Increment(nfiles)})
+        except NotFound:
+            return {"bytes": 0, "files": 0}
+        snap = ref.get()
+        return {"bytes": snap.get("bytes"), "files": snap.get("files")}
+
+    def add_drop_file(self, fid: str, f: dict) -> None:
+        self.db.collection("drop_files").document(fid).set(f)
+
+    def get_drop_file(self, fid: str) -> dict | None:
+        if not fid or "/" in fid:
+            return None
+        snap = self.db.collection("drop_files").document(fid).get()
+        return {"id": snap.id, **snap.to_dict()} if snap.exists else None
+
+    def list_drop_files(self, token: str | None = None, statuses: tuple = ("done",)) -> list[dict]:
+        q = self.db.collection("drop_files")
+        if token:
+            q = q.where("drop", "==", token)
+        out = [{"id": d.id, **d.to_dict()} for d in q.stream()]
+        return sorted([f for f in out if f.get("status") in statuses], key=lambda f: f["created_at"], reverse=True)
+
+    def set_drop_file(self, fid: str, **fields) -> None:
+        self.db.collection("drop_files").document(fid).update(fields)
+
+    def delete_drop_file(self, fid: str) -> None:
+        self.db.collection("drop_files").document(fid).delete()
 
     def daily_salt(self, day: str) -> bytes:
         """A random salt per Eastern day. Yesterday's is deleted, so ids can't be linked across days."""
